@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q&A Live — CHCD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#eef1f6; --card:#ffffff; --ink:#14171c; --muted:#6b7280; --line:#e6e9ef;
+      --brand:#2f6bff; --brand-ink:#1f4fd0; --brand-soft:#eaf1ff;
+      --love:#e0245e; --love-soft:#fdeef3; --ok:#16a34a; --ok-soft:#e7f6ec;
+      --radius:20px; --shadow:0 6px 24px rgba(20,40,80,.08); --shadow-sm:0 2px 10px rgba(20,40,80,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0}
+    body{
+      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background:radial-gradient(1200px 600px at 50% -200px,#dfe7ff 0%,var(--bg) 60%);
+      color:var(--ink); line-height:1.55; -webkit-font-smoothing:antialiased; min-height:100vh;
+    }
+    .wrap{max-width:680px;margin:0 auto;padding:22px 16px 80px}
+
+    /* Header */
+    .head{text-align:center;margin:8px 0 22px}
+    .live-pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
+      border-radius:999px;padding:6px 14px;font-size:.74rem;font-weight:700;letter-spacing:.06em;
+      text-transform:uppercase;color:var(--brand-ink);box-shadow:var(--shadow-sm)}
+    .dot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;box-shadow:0 0 0 0 rgba(255,77,79,.6);animation:pulse 1.6s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,79,.55)}70%{box-shadow:0 0 0 8px rgba(255,77,79,0)}100%{box-shadow:0 0 0 0 rgba(255,77,79,0)}}
+    .head h1{margin:14px 0 4px;font-size:1.8rem;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+    .head p{margin:0;color:var(--muted);font-size:.95rem;font-weight:500}
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+    .banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:14px;padding:12px 14px;font-size:.86rem;margin-bottom:16px}
+    .banner code{background:#fde9d3;padding:1px 6px;border-radius:6px;font-size:.82em}
+
+    /* Composer */
+    .composer{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}
+    textarea,input[type=text],input[type=password]{
+      width:100%;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;font:inherit;
+      color:var(--ink);background:#fbfcfe;transition:border-color .15s,box-shadow .15s;resize:vertical}
+    textarea{min-height:78px}
+    textarea:focus,input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft);background:#fff}
+    .composer-foot{display:flex;gap:10px;align-items:center;margin-top:10px}
+    .composer-foot input{flex:1;padding:11px 13px}
+    .counter{font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+    .btn{appearance:none;border:none;cursor:pointer;background:var(--brand);color:#fff;font:inherit;font-weight:700;
+      padding:12px 22px;border-radius:999px;box-shadow:0 4px 14px rgba(47,107,255,.32);transition:transform .05s,box-shadow .15s,background .15s}
+    .btn:hover{background:var(--brand-ink);box-shadow:0 6px 18px rgba(47,107,255,.4)}
+    .btn:active{transform:translateY(1px)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+    .btn.small{padding:9px 16px;font-size:.85rem}
+    .btn.ghost{background:#fff;color:var(--muted);border:1.5px solid var(--line);box-shadow:none;font-weight:600}
+    .btn.ghost:hover{background:var(--bg);color:var(--ink)}
+
+    /* Section bar */
+    .bar{display:flex;align-items:center;gap:10px;margin:4px 4px 14px}
+    .bar h2{font-size:1.05rem;margin:0;font-weight:800}
+    .bar .cnt{color:var(--muted);font-weight:600;font-size:.95rem}
+    .bar .grow{flex:1}
+
+    /* Avatars */
+    .avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+      font-weight:700;color:#fff;font-size:1rem;box-shadow:var(--shadow-sm)}
+    .avatar.sm{width:30px;height:30px;font-size:.8rem}
+
+    /* Posts */
+    #list{display:flex;flex-direction:column;gap:14px}
+    .post{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:18px}
+    .post-head{display:flex;gap:11px;align-items:center;margin-bottom:10px}
+    .cname{font-weight:700;font-size:.92rem}
+    .ctime{font-size:.76rem;color:var(--muted)}
+    .qtext{font-size:1.06rem;line-height:1.5;word-wrap:break-word}
+    .badge{font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+    .badge.answered{background:var(--ok-soft);color:var(--ok)}
+    .badge.new{background:#fff3df;color:#b9760c}
+
+    .answerbox{margin-top:12px;padding:12px 14px;background:var(--brand-soft);border-radius:14px;border-left:4px solid var(--brand)}
+    .answerbox .lbl{font-size:.7rem;font-weight:800;color:var(--brand-ink);text-transform:uppercase;letter-spacing:.04em}
+    .answerbox .txt{font-size:.98rem;margin-top:3px}
+
+    .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+    .act{appearance:none;cursor:pointer;font:inherit;font-size:.85rem;font-weight:600;background:#fff;
+      border:1.5px solid var(--line);color:var(--muted);padding:8px 15px;border-radius:999px;
+      display:inline-flex;align-items:center;gap:6px;transition:all .13s}
+    .act b{color:var(--ink);font-variant-numeric:tabular-nums}
+    .act:hover{background:var(--bg);border-color:#d3d9e4;transform:translateY(-1px)}
+    .act.on.like{color:var(--brand-ink);border-color:var(--brand);background:var(--brand-soft)}
+    .act.on.like b{color:var(--brand-ink)}
+    .act.on.love{color:var(--love);border-color:#f3aac0;background:var(--love-soft)}
+    .act.on.love b{color:var(--love)}
+
+    .replies{margin-top:14px;padding-left:14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:12px}
+    .reply{display:flex;gap:10px;align-items:flex-start}
+    .reply-body{flex:1;min-width:0}
+    .reply .ctext{font-size:.9rem;margin-top:1px;word-wrap:break-word}
+    .reply-composer{display:flex;gap:8px;align-items:center}
+    .reply-composer input{flex:1;padding:9px 12px;border-radius:999px}
+
+    /* Kontrol presenter (di halaman yang sama) */
+    .admin-toggle{position:fixed;top:14px;right:14px;z-index:40;background:var(--card);border:1.5px solid var(--line);
+      border-radius:999px;padding:8px 15px;font:inherit;font-weight:600;font-size:.8rem;color:var(--muted);cursor:pointer;box-shadow:var(--shadow-sm)}
+    .admin-toggle:hover{color:var(--ink);border-color:#d3d9e4}
+    .admin-toggle.on{background:var(--ok-soft);color:var(--ok);border-color:#b7e4c7}
+    .act.admin{border-style:dashed;color:var(--brand-ink);border-color:#bcd0ff;background:#f5f9ff}
+    .act.admin.danger{color:#c0392b;border-color:#f1b6b1;background:#fdf1f0}
+    .answer-edit{margin-top:12px;background:#f7f9fc;border:1px solid var(--line);border-radius:14px;padding:12px}
+    .answer-edit textarea{background:#fff}
+    .row-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .btn.ghost.danger{color:#c0392b} .btn.ghost.danger:hover{background:#fdeceb}
+    .empty{text-align:center;color:var(--muted);padding:44px 16px;font-size:.95rem}
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+      padding:12px 20px;border-radius:999px;font-size:.9rem;font-weight:600;box-shadow:var(--shadow);
+      opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
+  </style>
+</head>
+<body>
+  <button class="admin-toggle" id="adminBtn">🔑 Presenter</button>
+  <div class="wrap">
+    <div class="head">
+      <span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>
+      <h1 id="title">Q&amp;A Live</h1>
+      <p id="subtitle">CHCD</p>
+    </div>
+
+    <div id="warn"></div>
+
+    <div class="card composer">
+      <div class="avatar" id="meAvatar" style="background:linear-gradient(135deg,#2f6bff,#1f4fd0)">?</div>
+      <div style="flex:1">
+        <textarea id="qinput" maxlength="500" placeholder="Tulis pertanyaan / komentar untuk pemateri..."></textarea>
+        <div class="composer-foot">
+          <input type="text" id="ninput" maxlength="40" placeholder="Nama (opsional)" />
+          <span class="counter" id="counter">0/500</span>
+          <button class="btn" id="sendBtn">Kirim</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bar">
+      <h2>Diskusi</h2>
+      <span class="cnt" id="liveCount"></span>
+      <div class="grow"></div>
+      <button class="btn ghost small" id="sortBtn">Urutkan: Teratas</button>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase compat (script biasa, jalan walau dobel-klik) -->
+  <script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="app.js"></script>
+  <script>App.initAudience();</script>
+</body>
+</html>
