@@ -45,7 +45,16 @@
     .head h1{margin:16px auto 8px;font-size:2.1rem;font-weight:900;letter-spacing:-.03em;line-height:1.12;max-width:13ch;
       background:linear-gradient(120deg,var(--astra-dark),var(--astra) 55%,#2f8ad6);-webkit-background-clip:text;background-clip:text;color:transparent}
     .head .sub{margin:0;color:var(--muted);font-size:1rem;font-weight:600}
-    .head .hint{margin:14px auto 0;display:inline-block;color:var(--astra);font-size:.86rem;font-weight:600;background:var(--astra-soft);padding:8px 16px;border-radius:999px}
+
+    /* Logo Astra (gambar + fallback wordmark) */
+    .astra-img{height:30px;width:auto;display:block}
+    .astra-logo .astra-fallback{display:none;align-items:center;gap:9px}
+    .astra-logo .astra-fallback .mk{width:13px;height:13px;border-radius:3px;background:linear-gradient(135deg,var(--astra),var(--astra-light));transform:rotate(45deg)}
+
+    /* Centang biru presenter */
+    .verified{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#1d9bf0;color:#fff;font-size:9px;font-weight:900;margin-left:5px;vertical-align:middle}
+    .av-wrap{position:relative;flex-shrink:0}
+    .av-check{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;background:#1d9bf0;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;line-height:1}
 
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
     .banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:16px;padding:13px 15px;font-size:.86rem;margin-bottom:16px}
@@ -136,7 +145,8 @@
     /* Footer credit / branding */
     .foot{margin-top:auto;border-top:1px solid var(--line);background:#fff}
     .foot-in{max-width:760px;margin:0 auto;padding:22px 16px;text-align:center;color:var(--muted)}
-    .foot .astra-logo{font-size:1.05rem;justify-content:center;margin-bottom:6px}
+    .foot .astra-logo{font-size:1.05rem;justify-content:center;margin-bottom:8px}
+    .foot .astra-img{height:26px}
     .foot .credit{font-size:.86rem;font-weight:700;color:var(--ink)}
     .foot .credit span{color:var(--astra)}
     .foot .sub{font-size:.76rem;margin-top:3px}
@@ -146,7 +156,10 @@
   <div class="bg-blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 
   <nav class="nav"><div class="nav-in">
-    <a class="astra-logo" href="https://www.astra.co.id/" target="_blank" rel="noopener"><span class="mk"></span>ASTRA</a>
+    <a class="astra-logo" href="https://www.astra.co.id/" target="_blank" rel="noopener">
+      <img src="astra-logo.png" alt="ASTRA" class="astra-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" />
+      <span class="astra-fallback"><span class="mk"></span>ASTRA</span>
+    </a>
     <span class="nav-tag">GA · CHCD</span>
   </div></nav>
 
@@ -157,7 +170,6 @@
       <span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>
       <h1 id="title">Q&amp;A Live</h1>
       <p class="sub" id="subtitle">CHCD</p>
-      <span class="hint">💬 Tulis pertanyaan Anda, beri 👍 / ❤️, dan lihat jawaban langsung</span>
     </div>
 
     <div id="warn"></div>
@@ -185,7 +197,10 @@
   </div>
 
   <footer class="foot"><div class="foot-in">
-    <div class="astra-logo"><span class="mk"></span>ASTRA</div>
+    <div class="astra-logo">
+      <img src="astra-logo.png" alt="ASTRA" class="astra-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" />
+      <span class="astra-fallback"><span class="mk"></span>ASTRA</span>
+    </div>
     <div class="credit">Dibuat oleh <span>System Development — GA Department</span></div>
     <div class="sub">© 2026 · PT Astra International Tbk</div>
   </div></footer>

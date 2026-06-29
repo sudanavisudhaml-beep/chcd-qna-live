@@ -52,8 +52,8 @@
       if (!db) { var q = demo.find(id); if (q) { q.reactions[type] = (q.reactions[type] || 0) + delta; demo.emit(); } return Promise.resolve(); }
       var u = {}; u["reactions." + type] = FV().increment(delta); return db.collection(COL).doc(id).update(u);
     },
-    reply: function (id, text, name) {
-      var r = { rid: uid(), text: String(text).trim(), name: (name || "").trim() || "Anonim", ts: Date.now() };
+    reply: function (id, text, name, presenter) {
+      var r = { rid: uid(), text: String(text).trim(), name: (name || "").trim() || "Anonim", ts: Date.now(), presenter: !!presenter };
       if (!db) { var q = demo.find(id); if (q) { q.replies.push(r); demo.emit(); } return Promise.resolve(); }
       return db.collection(COL).doc(id).update({ replies: FV().arrayUnion(r) });
     },
@@ -77,6 +77,15 @@
   // Warna avatar konsisten per nama
   var PAL = [["#2f6bff", "#1f4fd0"], ["#e0245e", "#b01244"], ["#16a34a", "#0f7a37"], ["#f59e0b", "#c87c06"], ["#8b5cf6", "#6d34d6"], ["#0ea5e9", "#0876ab"], ["#ef4444", "#b91c1c"]];
   function avColor(name) { var s = 0, str = name || "A"; for (var i = 0; i < str.length; i++) s = (s + str.charCodeAt(i)) % PAL.length; var p = PAL[s]; return "linear-gradient(135deg," + p[0] + "," + p[1] + ")"; }
+  // Centang biru penanda presenter (membedakan dari user lain)
+  function vcheck() { return '<span class="verified" title="Presenter">✓</span>'; }
+  // Avatar; jika presenter -> warna Astra + badge centang biru di pojok
+  function avatarHTML(name, sm, presenter) {
+    var cls = "avatar" + (sm ? " sm" : "");
+    var bg = presenter ? "linear-gradient(135deg,#005BAA,#2f8ad6)" : avColor(name);
+    var inner = '<div class="' + cls + '" style="background:' + bg + '">' + esc(initial(name)) + '</div>';
+    return presenter ? '<div class="av-wrap">' + inner + '<span class="av-check">✓</span></div>' : inner;
+  }
   function ago(ms) {
     if (!ms) return "baru saja";
     var s = Math.floor((Date.now() - ms) / 1000);
@@ -160,7 +169,7 @@
       var inp = $("ri_" + id), text = inp.value.trim();
       if (!text) { toast("Tulis balasan dulu"); return; }
       inp.disabled = true;
-      DB.reply(id, text, $("ninput").value).then(function () { inp.value = ""; toast("Balasan terkirim"); })
+      DB.reply(id, text, $("ninput").value, admin).then(function () { inp.value = ""; toast(admin ? "Balasan presenter terkirim ✓" : "Balasan terkirim"); })
         .catch(function () { toast("Gagal membalas"); }).then(function () { var i2 = $("ri_" + id); if (i2) i2.disabled = false; });
     };
 
@@ -175,8 +184,8 @@
     function repliesBlock(q) {
       var list = (q.replies || []).slice().sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
       var html = list.map(function (rp) {
-        return '<div class="reply"><div class="avatar sm" style="background:' + avColor(rp.name) + '">' + esc(initial(rp.name)) + '</div>' +
-          '<div class="reply-body"><span class="cname">' + esc(rp.name || "Anonim") + '</span> <span class="ctime">' + ago(rp.ts) + '</span>' +
+        return '<div class="reply">' + avatarHTML(rp.name, true, rp.presenter) +
+          '<div class="reply-body"><span class="cname">' + esc(rp.name || "Anonim") + '</span>' + (rp.presenter ? vcheck() : "") + ' <span class="ctime">' + ago(rp.ts) + '</span>' +
           '<div class="ctext">' + esc(rp.text) + '</div></div></div>';
       }).join("");
       var comp = openReply[q.id] ? '<div class="reply-composer"><div class="avatar sm" style="background:' + avColor($("ninput").value) + '">' + esc($("meAvatar").textContent) + '</div>' +
@@ -215,7 +224,7 @@
           '<div><span class="cname">' + esc(q.name || "Anonim") + '</span> <span class="ctime">' + ago(tsOf(q)) + '</span>' +
           (q.answered ? ' <span class="badge answered">Dijawab pemateri</span>' : "") + '</div></div>' +
           '<div class="qtext">' + esc(q.text) + '</div>' +
-          (q.answered && q.answer ? '<div class="answerbox"><div class="lbl">📌 Jawaban pemateri</div><div class="txt">' + esc(q.answer) + '</div></div>' : "") +
+          (q.answered && q.answer ? '<div class="answerbox"><div class="lbl">📌 Jawaban pemateri ' + vcheck() + '</div><div class="txt">' + esc(q.answer) + '</div></div>' : "") +
           reactBtns(q) + adminBlock(q) + repliesBlock(q) + '</div>';
       }).join("");
 
@@ -255,8 +264,8 @@
       var list = (q.replies || []).slice().sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
       if (!list.length) return "";
       return '<div class="replies">' + list.map(function (rp) {
-        return '<div class="reply"><div class="avatar sm" style="background:' + avColor(rp.name) + '">' + esc(initial(rp.name)) + '</div>' +
-          '<div class="reply-body"><span class="cname">' + esc(rp.name || "Anonim") + '</span><div class="ctext">' + esc(rp.text) + '</div></div></div>';
+        return '<div class="reply">' + avatarHTML(rp.name, true, rp.presenter) +
+          '<div class="reply-body"><span class="cname">' + esc(rp.name || "Anonim") + '</span>' + (rp.presenter ? vcheck() : "") + '<div class="ctext">' + esc(rp.text) + '</div></div></div>';
       }).join("") + '</div>';
     }
     function render() {
