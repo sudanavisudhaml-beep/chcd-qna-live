@@ -106,6 +106,7 @@
     setText("appName", NAME);
     setText("tagline", CFG.APP_TAGLINE || "");
     setText("event", CFG.APP_EVENT || "");
+    setText("materi", CFG.APP_MATERI || "");
     document.title = NAME + (CFG.APP_EVENT ? " — " + CFG.APP_EVENT : "");
 
     var items = [], sortByTop = true;
@@ -178,10 +179,9 @@
     };
 
     function reactBtns(q) {
-      var r = reacts[q.id] || {}, like = q.reactions.like || 0, love = q.reactions.love || 0, rep = (q.replies || []).length;
+      var r = reacts[q.id] || {}, like = q.reactions.like || 0, rep = (q.replies || []).length;
       return '<div class="actions">' +
-        '<button class="act ' + (r.like ? "on like" : "") + '" onclick="__react(\'' + q.id + '\',\'like\')">👍 <b>' + (like || "") + '</b> Suka</button>' +
-        '<button class="act ' + (r.love ? "on love" : "") + '" onclick="__react(\'' + q.id + '\',\'love\')">❤️ <b>' + (love || "") + '</b> Suka banget</button>' +
+        '<button class="act ' + (r.like ? "on like" : "") + '" onclick="__react(\'' + q.id + '\',\'like\')">👍 <b>' + like + '</b></button>' +
         '<button class="act" onclick="__toggleReply(\'' + q.id + '\')">💬 <b>' + (rep || "") + '</b> Balas</button>' +
         '</div>';
     }

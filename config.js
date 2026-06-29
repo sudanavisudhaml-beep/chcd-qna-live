@@ -27,7 +27,8 @@ window.APP = {
   PRESENTER_PIN: "1234",
 
   // ---------- BRANDING JUDUL (ganti sesuai event) ----------
-  APP_NAME: "QUERY",                              // nama aplikasi
+  APP_NAME: "QUERY",                              // nama aplikasi (fallback bila logo gambar tak ada)
   APP_TAGLINE: "Malu Bertanya, Sesat di Jalan",   // tagline
   APP_EVENT: "Kopdar CHCD",                        // nama event / forum
+  APP_MATERI: "Sosialisasi Juklak Pengadaan Barang dan Jasa CHCD", // judul materi
 };

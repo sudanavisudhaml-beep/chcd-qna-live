@@ -49,14 +49,17 @@
       border-radius:999px;padding:6px 15px;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff;backdrop-filter:blur(4px)}
     .dot{width:8px;height:8px;border-radius:50%;background:#ff5a5c;animation:pulse 1.6s infinite}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,92,.6)}70%{box-shadow:0 0 0 9px rgba(255,90,92,0)}100%{box-shadow:0 0 0 0 rgba(255,90,92,0)}}
-    .qicon{display:inline-block;width:66px;height:66px;margin:16px auto 0;border-radius:18px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
-    .qicon img{width:100%;height:100%;display:block;border-radius:18px;object-fit:cover}
-    .qicon-fallback{display:none;width:66px;height:66px;align-items:center;justify-content:center;background:#0e3460;color:#fff;
-      font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:2.1rem;border-radius:18px}
-    .hero .qname{font-family:"Plus Jakarta Sans",Inter,sans-serif;font-weight:800;font-size:3.1rem;letter-spacing:.01em;line-height:1;margin:14px 0 0;color:#fff}
-    .hero .tagline{margin:9px 0 0;font-size:1.02rem;font-weight:600;font-style:italic;color:rgba(255,255,255,.94)}
-    .hero .event{display:inline-block;margin-top:17px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);
-      padding:8px 20px;border-radius:999px;font-weight:800;font-size:.92rem;letter-spacing:.01em;backdrop-filter:blur(4px)}
+    /* Kartu putih berisi logo full QUERY */
+    .logo-card{display:inline-block;background:#fff;border-radius:18px;padding:16px 26px;margin:16px 0 2px;box-shadow:0 12px 28px rgba(0,0,0,.20)}
+    .query-logo-img{height:78px;width:auto;max-width:78vw;display:block}
+    .query-logo-fallback{display:none;flex-direction:column;align-items:center;line-height:1}
+    .query-logo-fallback .ql-name{font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:2.5rem;color:#0e3460;letter-spacing:.01em}
+    .query-logo-fallback .ql-sub{font-size:.78rem;font-weight:600;color:#7c8aa0;letter-spacing:.16em;text-transform:uppercase;margin-top:4px}
+    .hero .tagline{margin:14px 0 0;font-size:1.04rem;font-weight:600;font-style:italic;color:rgba(255,255,255,.95)}
+    .hero .event{display:inline-block;margin-top:16px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);
+      padding:9px 22px;border-radius:999px;font-weight:800;font-size:.96rem;letter-spacing:.01em;backdrop-filter:blur(4px)}
+    .hero .materi{display:block;margin:11px auto 0;max-width:32ch;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
+      padding:8px 18px;border-radius:16px;font-weight:600;font-size:.84rem;line-height:1.35;color:rgba(255,255,255,.96)}
 
     /* Logo Astra (gambar + fallback wordmark) */
     .astra-img{height:30px;width:auto;display:block}
@@ -172,7 +175,6 @@
       <img src="astra-logo.png" alt="ASTRA" class="astra-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" />
       <span class="astra-fallback"><span class="mk"></span>ASTRA</span>
     </a>
-    <span class="nav-tag">GA · CHCD</span>
   </div></nav>
 
   <button class="admin-toggle" id="adminBtn">🔑 Presenter</button>
@@ -180,13 +182,13 @@
   <div class="wrap">
     <div class="hero">
       <span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>
-      <span class="qicon">
-        <img src="query-icon.png" alt="QUERY" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <span class="qicon-fallback">Q</span>
-      </span>
-      <h1 class="qname" id="appName">QUERY</h1>
+      <div class="logo-card">
+        <img src="query-logo.png" alt="QUERY — Suara Insan Astra" class="query-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="query-logo-fallback"><span class="ql-name" id="appName">QUERY</span><span class="ql-sub">Suara Insan Astra</span></div>
+      </div>
       <p class="tagline" id="tagline">Malu Bertanya, Sesat di Jalan</p>
       <span class="event" id="event">Kopdar CHCD</span>
+      <span class="materi" id="materi">Sosialisasi Juklak Pengadaan Barang dan Jasa CHCD</span>
     </div>
 
     <div id="warn"></div>
