@@ -99,10 +99,14 @@
   /* ============================================================
      HALAMAN AUDIENCE
      ============================================================ */
+  function setText(id, val) { var e = $(id); if (e) e.textContent = val; }
+
   function initAudience() {
-    $("title").textContent = CFG.APP_TITLE || "Q&A Live";
-    $("subtitle").textContent = CFG.APP_SUBTITLE || "";
-    document.title = CFG.APP_TITLE || "Q&A Live";
+    var NAME = CFG.APP_NAME || "QUERY";
+    setText("appName", NAME);
+    setText("tagline", CFG.APP_TAGLINE || "");
+    setText("event", CFG.APP_EVENT || "");
+    document.title = NAME + (CFG.APP_EVENT ? " — " + CFG.APP_EVENT : "");
 
     var items = [], sortByTop = true;
     var openReply = {}, openAnswer = {};
@@ -239,7 +243,8 @@
      HALAMAN PRESENTER
      ============================================================ */
   function initPresenter() {
-    $("subtitle").textContent = CFG.APP_SUBTITLE || "";
+    setText("subtitle", (CFG.APP_NAME || "QUERY") + (CFG.APP_EVENT ? " · " + CFG.APP_EVENT : ""));
+    document.title = (CFG.APP_NAME || "QUERY") + " — Presenter";
     var items = [], filter = "all";
 
     function unlock() {

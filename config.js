@@ -1,17 +1,16 @@
 // ============================================================
-//  KONFIGURASI APLIKASI Q&A LIVE — CHCD
+//  QUERY — Suara Insan Astra  |  KONFIGURASI
 //  Ini SATU-SATUNYA file yang perlu Anda edit.
+//  Untuk event berikutnya, cukup ganti APP_EVENT (& Firebase bila perlu).
 // ============================================================
 //
-//  CARA ISI (lengkap di README.md):
-//  1. https://console.firebase.google.com -> Add project (mis. "chcd-qna")
+//  SETUP FIREBASE (lengkap di README.md):
+//  1. https://console.firebase.google.com -> Add project
 //  2. Build -> Firestore Database -> Create database -> "Start in test mode"
-//     -> lokasi asia-southeast2 (Jakarta)
-//  3. Project settings (gerigi) -> Your apps -> ikon </> (Web) -> daftarkan
+//  3. Project settings (gerigi) -> Your apps -> ikon </> (Web)
 //     -> SALIN isi firebaseConfig, tempel menggantikan nilai di bawah.
 //
-//  Sebelum diisi, app tetap jalan dalam MODE DEMO (data contoh) supaya
-//  Anda bisa lihat tampilannya dulu.
+//  Sebelum diisi, app jalan dalam MODE DEMO (data contoh).
 // ============================================================
 
 window.APP = {
@@ -24,10 +23,11 @@ window.APP = {
     appId: "GANTI",
   },
 
-  // PIN untuk membuka Panel Presenter (presenter.html). Ganti dengan rahasia Anda.
+  // PIN untuk membuka Mode Presenter (menjawab langsung di halaman). Ganti dengan rahasia Anda.
   PRESENTER_PIN: "1234",
 
-  // Teks header aplikasi.
-  APP_TITLE: "Q&A Live — Juklak Pengadaan Barang & Jasa",
-  APP_SUBTITLE: "Corporate Human Capital Development (CHCD)",
+  // ---------- BRANDING JUDUL (ganti sesuai event) ----------
+  APP_NAME: "QUERY",                              // nama aplikasi
+  APP_TAGLINE: "Malu Bertanya, Sesat di Jalan",   // tagline
+  APP_EVENT: "Kopdar CHCD",                        // nama event / forum
 };

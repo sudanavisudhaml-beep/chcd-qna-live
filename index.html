@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Q&A Live — CHCD</title>
+  <title>QUERY — Kopdar CHCD</title>
+  <link rel="icon" type="image/png" href="query-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet" />
   <style>
     :root{
       --astra:#005BAA; --astra-dark:#00417c; --astra-light:#95B6DF; --astra-soft:#e9f2fb; --astra-soft2:#f3f8fd;
@@ -36,15 +37,26 @@
 
     .wrap{max-width:680px;margin:0 auto;padding:8px 16px 40px;width:100%;flex:1}
 
-    /* Hero judul */
-    .head{text-align:center;margin:26px 0 24px;position:relative}
-    .live-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #d4e4f6;border-radius:999px;
-      padding:7px 16px;font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--astra);box-shadow:var(--shadow-sm)}
-    .dot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;animation:pulse 1.6s infinite}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,79,.55)}70%{box-shadow:0 0 0 9px rgba(255,77,79,0)}100%{box-shadow:0 0 0 0 rgba(255,77,79,0)}}
-    .head h1{margin:16px auto 8px;font-size:2.1rem;font-weight:900;letter-spacing:-.03em;line-height:1.12;max-width:13ch;
-      background:linear-gradient(120deg,var(--astra-dark),var(--astra) 55%,#2f8ad6);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .head .sub{margin:0;color:var(--muted);font-size:1rem;font-weight:600}
+    /* Hero QUERY (gaya Astra: heavy putih di atas biru) */
+    .hero{position:relative;overflow:hidden;text-align:center;color:#fff;margin:22px 0 26px;padding:30px 22px 28px;border-radius:28px;
+      background:linear-gradient(155deg,#0a74c8 0%,#005BAA 52%,#00407a 100%);box-shadow:0 18px 44px rgba(0,71,140,.30)}
+    /* lingkaran sonar (echo logo QUERY) */
+    .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.12)}
+    .hero::before{width:240px;height:240px;top:-90px;right:-70px}
+    .hero::after{width:150px;height:150px;bottom:-70px;left:-40px}
+    .hero>*{position:relative;z-index:1}
+    .live-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);
+      border-radius:999px;padding:6px 15px;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff;backdrop-filter:blur(4px)}
+    .dot{width:8px;height:8px;border-radius:50%;background:#ff5a5c;animation:pulse 1.6s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,92,.6)}70%{box-shadow:0 0 0 9px rgba(255,90,92,0)}100%{box-shadow:0 0 0 0 rgba(255,90,92,0)}}
+    .qicon{display:inline-block;width:66px;height:66px;margin:16px auto 0;border-radius:18px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+    .qicon img{width:100%;height:100%;display:block;border-radius:18px;object-fit:cover}
+    .qicon-fallback{display:none;width:66px;height:66px;align-items:center;justify-content:center;background:#0e3460;color:#fff;
+      font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:2.1rem;border-radius:18px}
+    .hero .qname{font-family:"Plus Jakarta Sans",Inter,sans-serif;font-weight:800;font-size:3.1rem;letter-spacing:.01em;line-height:1;margin:14px 0 0;color:#fff}
+    .hero .tagline{margin:9px 0 0;font-size:1.02rem;font-weight:600;font-style:italic;color:rgba(255,255,255,.94)}
+    .hero .event{display:inline-block;margin-top:17px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);
+      padding:8px 20px;border-radius:999px;font-weight:800;font-size:.92rem;letter-spacing:.01em;backdrop-filter:blur(4px)}
 
     /* Logo Astra (gambar + fallback wordmark) */
     .astra-img{height:30px;width:auto;display:block}
@@ -166,10 +178,15 @@
   <button class="admin-toggle" id="adminBtn">🔑 Presenter</button>
 
   <div class="wrap">
-    <div class="head">
+    <div class="hero">
       <span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>
-      <h1 id="title">Q&amp;A Live</h1>
-      <p class="sub" id="subtitle">CHCD</p>
+      <span class="qicon">
+        <img src="query-icon.png" alt="QUERY" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <span class="qicon-fallback">Q</span>
+      </span>
+      <h1 class="qname" id="appName">QUERY</h1>
+      <p class="tagline" id="tagline">Malu Bertanya, Sesat di Jalan</p>
+      <span class="event" id="event">Kopdar CHCD</span>
     </div>
 
     <div id="warn"></div>
