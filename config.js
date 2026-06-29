@@ -15,12 +15,12 @@
 
 window.APP = {
   firebaseConfig: {
-    apiKey: "GANTI_DENGAN_API_KEY_ANDA",
-    authDomain: "GANTI.firebaseapp.com",
-    projectId: "GANTI",
-    storageBucket: "GANTI.appspot.com",
-    messagingSenderId: "GANTI",
-    appId: "GANTI",
+    apiKey: "AIzaSyADeuHLNMAs6DoeCMUClXQ77Hc8fs0IGac",
+    authDomain: "query-chcd.firebaseapp.com",
+    projectId: "query-chcd",
+    storageBucket: "query-chcd.firebasestorage.app",
+    messagingSenderId: "224504788",
+    appId: "1:224504788:web:369b7f9c739679ed37c441",
   },
 
   // PIN untuk membuka Mode Presenter (menjawab langsung di halaman). Ganti dengan rahasia Anda.
