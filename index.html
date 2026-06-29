@@ -6,132 +6,164 @@
   <title>Q&A Live — CHCD</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root{
-      --bg:#eef1f6; --card:#ffffff; --ink:#14171c; --muted:#6b7280; --line:#e6e9ef;
-      --brand:#2f6bff; --brand-ink:#1f4fd0; --brand-soft:#eaf1ff;
+      --astra:#005BAA; --astra-dark:#00417c; --astra-light:#95B6DF; --astra-soft:#e9f2fb; --astra-soft2:#f3f8fd;
+      --ink:#0f1b2d; --muted:#65728a; --line:#e3e9f1; --card:#ffffff;
       --love:#e0245e; --love-soft:#fdeef3; --ok:#16a34a; --ok-soft:#e7f6ec;
-      --radius:20px; --shadow:0 6px 24px rgba(20,40,80,.08); --shadow-sm:0 2px 10px rgba(20,40,80,.06);
+      --radius:22px; --shadow:0 10px 34px rgba(0,71,140,.10); --shadow-sm:0 3px 12px rgba(0,71,140,.07);
     }
-    *{box-sizing:border-box}
-    html,body{margin:0}
-    body{
-      font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-      background:radial-gradient(1200px 600px at 50% -200px,#dfe7ff 0%,var(--bg) 60%);
-      color:var(--ink); line-height:1.55; -webkit-font-smoothing:antialiased; min-height:100vh;
-    }
-    .wrap{max-width:680px;margin:0 auto;padding:22px 16px 80px}
+    *{box-sizing:border-box} html,body{margin:0}
+    body{font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      color:var(--ink);background:#f6f9fc;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
 
-    /* Header */
-    .head{text-align:center;margin:8px 0 22px}
-    .live-pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
-      border-radius:999px;padding:6px 14px;font-size:.74rem;font-weight:700;letter-spacing:.06em;
-      text-transform:uppercase;color:var(--brand-ink);box-shadow:var(--shadow-sm)}
-    .dot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;box-shadow:0 0 0 0 rgba(255,77,79,.6);animation:pulse 1.6s infinite}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,79,.55)}70%{box-shadow:0 0 0 8px rgba(255,77,79,0)}100%{box-shadow:0 0 0 0 rgba(255,77,79,0)}}
-    .head h1{margin:14px 0 4px;font-size:1.8rem;font-weight:800;letter-spacing:-.02em;line-height:1.2}
-    .head p{margin:0;color:var(--muted);font-size:.95rem;font-weight:500}
+    /* Bubble dekoratif latar (ala Mentimeter) */
+    .bg-blobs{position:fixed;inset:0;overflow:hidden;z-index:-1;pointer-events:none}
+    .blob{position:absolute;border-radius:50%;filter:blur(8px);opacity:.5}
+    .blob.b1{width:260px;height:260px;background:radial-gradient(circle at 30% 30%,#bcd6f5,#e9f2fb);top:-70px;left:-60px}
+    .blob.b2{width:180px;height:180px;background:radial-gradient(circle at 30% 30%,#d7e6fa,#f3f8fd);top:120px;right:-50px}
+    .blob.b3{width:140px;height:140px;background:radial-gradient(circle at 30% 30%,#cfe0f8,#eef5fd);bottom:60px;left:-40px;opacity:.4}
+
+    /* Navbar Astra */
+    .nav{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.9);backdrop-filter:saturate(160%) blur(8px);
+      border-bottom:1px solid var(--line)}
+    .nav-in{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .astra-logo{display:inline-flex;align-items:center;gap:9px;font-weight:900;font-size:1.32rem;letter-spacing:.02em;color:var(--astra);text-decoration:none}
+    .astra-logo .mk{width:13px;height:13px;border-radius:3px;background:linear-gradient(135deg,var(--astra),var(--astra-light));transform:rotate(45deg)}
+    .nav-tag{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+      background:var(--astra-soft);border:1px solid #d4e4f6;padding:5px 11px;border-radius:999px;white-space:nowrap}
+
+    .wrap{max-width:680px;margin:0 auto;padding:8px 16px 40px;width:100%;flex:1}
+
+    /* Hero judul */
+    .head{text-align:center;margin:26px 0 24px;position:relative}
+    .live-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #d4e4f6;border-radius:999px;
+      padding:7px 16px;font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--astra);box-shadow:var(--shadow-sm)}
+    .dot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;animation:pulse 1.6s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,79,.55)}70%{box-shadow:0 0 0 9px rgba(255,77,79,0)}100%{box-shadow:0 0 0 0 rgba(255,77,79,0)}}
+    .head h1{margin:16px auto 8px;font-size:2.1rem;font-weight:900;letter-spacing:-.03em;line-height:1.12;max-width:13ch;
+      background:linear-gradient(120deg,var(--astra-dark),var(--astra) 55%,#2f8ad6);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .head .sub{margin:0;color:var(--muted);font-size:1rem;font-weight:600}
+    .head .hint{margin:14px auto 0;display:inline-block;color:var(--astra);font-size:.86rem;font-weight:600;background:var(--astra-soft);padding:8px 16px;border-radius:999px}
 
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
-    .banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:14px;padding:12px 14px;font-size:.86rem;margin-bottom:16px}
+    .banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:16px;padding:13px 15px;font-size:.86rem;margin-bottom:16px}
     .banner code{background:#fde9d3;padding:1px 6px;border-radius:6px;font-size:.82em}
 
     /* Composer */
-    .composer{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}
-    textarea,input[type=text],input[type=password]{
-      width:100%;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;font:inherit;
-      color:var(--ink);background:#fbfcfe;transition:border-color .15s,box-shadow .15s;resize:vertical}
-    textarea{min-height:78px}
-    textarea:focus,input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft);background:#fff}
+    .composer{display:flex;gap:12px;align-items:flex-start;margin-bottom:20px}
+    textarea,input[type=text],input[type=password]{width:100%;border:2px solid var(--line);border-radius:16px;padding:14px 15px;font:inherit;
+      color:var(--ink);background:var(--astra-soft2);transition:border-color .15s,box-shadow .15s,background .15s;resize:vertical}
+    textarea{min-height:80px}
+    textarea:focus,input:focus{outline:none;border-color:var(--astra);box-shadow:0 0 0 4px var(--astra-soft);background:#fff}
     .composer-foot{display:flex;gap:10px;align-items:center;margin-top:10px}
-    .composer-foot input{flex:1;padding:11px 13px}
+    .composer-foot input{flex:1;padding:12px 14px;border-radius:999px}
     .counter{font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 
-    .btn{appearance:none;border:none;cursor:pointer;background:var(--brand);color:#fff;font:inherit;font-weight:700;
-      padding:12px 22px;border-radius:999px;box-shadow:0 4px 14px rgba(47,107,255,.32);transition:transform .05s,box-shadow .15s,background .15s}
-    .btn:hover{background:var(--brand-ink);box-shadow:0 6px 18px rgba(47,107,255,.4)}
-    .btn:active{transform:translateY(1px)}
+    .btn{appearance:none;border:none;cursor:pointer;background:var(--astra);color:#fff;font:inherit;font-weight:800;
+      padding:13px 26px;border-radius:999px;box-shadow:0 6px 18px rgba(0,91,170,.35);transition:transform .08s,box-shadow .15s,background .15s}
+    .btn:hover{background:var(--astra-dark);box-shadow:0 8px 22px rgba(0,91,170,.45);transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
     .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
-    .btn.small{padding:9px 16px;font-size:.85rem}
-    .btn.ghost{background:#fff;color:var(--muted);border:1.5px solid var(--line);box-shadow:none;font-weight:600}
-    .btn.ghost:hover{background:var(--bg);color:var(--ink)}
+    .btn.small{padding:9px 17px;font-size:.85rem}
+    .btn.ghost{background:#fff;color:var(--muted);border:2px solid var(--line);box-shadow:none;font-weight:700}
+    .btn.ghost:hover{background:var(--astra-soft2);color:var(--ink);transform:none}
+    .btn.ghost.danger{color:#c0392b} .btn.ghost.danger:hover{background:#fdeceb}
 
-    /* Section bar */
-    .bar{display:flex;align-items:center;gap:10px;margin:4px 4px 14px}
-    .bar h2{font-size:1.05rem;margin:0;font-weight:800}
-    .bar .cnt{color:var(--muted);font-weight:600;font-size:.95rem}
+    .bar{display:flex;align-items:center;gap:10px;margin:6px 6px 16px}
+    .bar h2{font-size:1.1rem;margin:0;font-weight:800}
+    .bar .cnt{color:var(--muted);font-weight:700;font-size:.95rem}
     .bar .grow{flex:1}
 
-    /* Avatars */
-    .avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-      font-weight:700;color:#fff;font-size:1rem;box-shadow:var(--shadow-sm)}
+    .avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+      font-weight:800;color:#fff;font-size:1.02rem;box-shadow:var(--shadow-sm)}
     .avatar.sm{width:30px;height:30px;font-size:.8rem}
 
-    /* Posts */
-    #list{display:flex;flex-direction:column;gap:14px}
-    .post{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:18px}
+    /* Kartu pertanyaan = bubble */
+    #list{display:flex;flex-direction:column;gap:15px}
+    .post{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-sm);padding:18px 20px;
+      transition:box-shadow .18s,transform .18s}
+    .post:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
     .post-head{display:flex;gap:11px;align-items:center;margin-bottom:10px}
-    .cname{font-weight:700;font-size:.92rem}
+    .cname{font-weight:800;font-size:.93rem}
     .ctime{font-size:.76rem;color:var(--muted)}
-    .qtext{font-size:1.06rem;line-height:1.5;word-wrap:break-word}
-    .badge{font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
-    .badge.answered{background:var(--ok-soft);color:var(--ok)}
-    .badge.new{background:#fff3df;color:#b9760c}
+    .qtext{font-size:1.08rem;line-height:1.5;word-wrap:break-word}
+    .badge{font-size:.66rem;font-weight:800;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+    .badge.answered{background:var(--ok-soft);color:var(--ok)} .badge.new{background:#fff3df;color:#b9760c}
 
-    .answerbox{margin-top:12px;padding:12px 14px;background:var(--brand-soft);border-radius:14px;border-left:4px solid var(--brand)}
-    .answerbox .lbl{font-size:.7rem;font-weight:800;color:var(--brand-ink);text-transform:uppercase;letter-spacing:.04em}
+    .answerbox{margin-top:12px;padding:13px 15px;background:var(--astra-soft);border-radius:16px;border-left:4px solid var(--astra)}
+    .answerbox .lbl{font-size:.7rem;font-weight:800;color:var(--astra-dark);text-transform:uppercase;letter-spacing:.04em}
     .answerbox .txt{font-size:.98rem;margin-top:3px}
 
-    .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-    .act{appearance:none;cursor:pointer;font:inherit;font-size:.85rem;font-weight:600;background:#fff;
-      border:1.5px solid var(--line);color:var(--muted);padding:8px 15px;border-radius:999px;
-      display:inline-flex;align-items:center;gap:6px;transition:all .13s}
+    /* Action = bubble button ala Mentimeter */
+    .actions{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}
+    .act{appearance:none;cursor:pointer;font:inherit;font-size:.86rem;font-weight:700;background:#fff;
+      border:2px solid var(--line);color:var(--muted);padding:9px 17px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;
+      box-shadow:0 2px 6px rgba(0,71,140,.05);transition:transform .12s,box-shadow .12s,border-color .12s,background .12s}
     .act b{color:var(--ink);font-variant-numeric:tabular-nums}
-    .act:hover{background:var(--bg);border-color:#d3d9e4;transform:translateY(-1px)}
-    .act.on.like{color:var(--brand-ink);border-color:var(--brand);background:var(--brand-soft)}
-    .act.on.like b{color:var(--brand-ink)}
-    .act.on.love{color:var(--love);border-color:#f3aac0;background:var(--love-soft)}
-    .act.on.love b{color:var(--love)}
-
-    .replies{margin-top:14px;padding-left:14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:12px}
-    .reply{display:flex;gap:10px;align-items:flex-start}
-    .reply-body{flex:1;min-width:0}
-    .reply .ctext{font-size:.9rem;margin-top:1px;word-wrap:break-word}
-    .reply-composer{display:flex;gap:8px;align-items:center}
-    .reply-composer input{flex:1;padding:9px 12px;border-radius:999px}
-
-    /* Kontrol presenter (di halaman yang sama) */
-    .admin-toggle{position:fixed;top:14px;right:14px;z-index:40;background:var(--card);border:1.5px solid var(--line);
-      border-radius:999px;padding:8px 15px;font:inherit;font-weight:600;font-size:.8rem;color:var(--muted);cursor:pointer;box-shadow:var(--shadow-sm)}
-    .admin-toggle:hover{color:var(--ink);border-color:#d3d9e4}
-    .admin-toggle.on{background:var(--ok-soft);color:var(--ok);border-color:#b7e4c7}
-    .act.admin{border-style:dashed;color:var(--brand-ink);border-color:#bcd0ff;background:#f5f9ff}
+    .act:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 6px 14px rgba(0,71,140,.14);border-color:#cfe0f5}
+    .act:active{transform:translateY(0) scale(.97)}
+    .act.on.like{color:#fff;border-color:var(--astra);background:linear-gradient(135deg,var(--astra),#2f8ad6);box-shadow:0 6px 16px rgba(0,91,170,.4)}
+    .act.on.like b{color:#fff}
+    .act.on.love{color:#fff;border-color:var(--love);background:linear-gradient(135deg,#e0245e,#ff5e87);box-shadow:0 6px 16px rgba(224,36,94,.4)}
+    .act.on.love b{color:#fff}
+    .act.admin{border-style:dashed;color:var(--astra-dark);border-color:#bcd6f5;background:var(--astra-soft2)}
     .act.admin.danger{color:#c0392b;border-color:#f1b6b1;background:#fdf1f0}
-    .answer-edit{margin-top:12px;background:#f7f9fc;border:1px solid var(--line);border-radius:14px;padding:12px}
+
+    .answer-edit{margin-top:13px;background:var(--astra-soft2);border:1px solid var(--line);border-radius:16px;padding:13px}
     .answer-edit textarea{background:#fff}
     .row-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
-    .btn.ghost.danger{color:#c0392b} .btn.ghost.danger:hover{background:#fdeceb}
-    .empty{text-align:center;color:var(--muted);padding:44px 16px;font-size:.95rem}
-    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
-      padding:12px 20px;border-radius:999px;font-size:.9rem;font-weight:600;box-shadow:var(--shadow);
-      opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
+
+    .replies{margin-top:14px;padding-left:15px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:12px}
+    .reply{display:flex;gap:10px;align-items:flex-start}
+    .reply-body{flex:1;min-width:0} .reply .ctext{font-size:.9rem;margin-top:1px;word-wrap:break-word}
+    .reply-composer{display:flex;gap:8px;align-items:center}
+    .reply-composer input{flex:1;padding:10px 14px;border-radius:999px}
+
+    .empty{text-align:center;color:var(--muted);padding:46px 16px;font-size:.95rem}
+
+    /* Tombol presenter */
+    .admin-toggle{position:fixed;top:64px;right:14px;z-index:25;background:#fff;border:2px solid var(--line);border-radius:999px;
+      padding:9px 16px;font:inherit;font-weight:700;font-size:.8rem;color:var(--muted);cursor:pointer;box-shadow:var(--shadow-sm)}
+    .admin-toggle:hover{color:var(--astra);border-color:#cfe0f5}
+    .admin-toggle.on{background:var(--ok-soft);color:var(--ok);border-color:#b7e4c7}
+
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
+      font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
+
+    /* Footer credit / branding */
+    .foot{margin-top:auto;border-top:1px solid var(--line);background:#fff}
+    .foot-in{max-width:760px;margin:0 auto;padding:22px 16px;text-align:center;color:var(--muted)}
+    .foot .astra-logo{font-size:1.05rem;justify-content:center;margin-bottom:6px}
+    .foot .credit{font-size:.86rem;font-weight:700;color:var(--ink)}
+    .foot .credit span{color:var(--astra)}
+    .foot .sub{font-size:.76rem;margin-top:3px}
   </style>
 </head>
 <body>
+  <div class="bg-blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+  <nav class="nav"><div class="nav-in">
+    <a class="astra-logo" href="https://www.astra.co.id/" target="_blank" rel="noopener"><span class="mk"></span>ASTRA</a>
+    <span class="nav-tag">GA · CHCD</span>
+  </div></nav>
+
   <button class="admin-toggle" id="adminBtn">🔑 Presenter</button>
+
   <div class="wrap">
     <div class="head">
       <span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>
       <h1 id="title">Q&amp;A Live</h1>
-      <p id="subtitle">CHCD</p>
+      <p class="sub" id="subtitle">CHCD</p>
+      <span class="hint">💬 Tulis pertanyaan Anda, beri 👍 / ❤️, dan lihat jawaban langsung</span>
     </div>
 
     <div id="warn"></div>
 
     <div class="card composer">
-      <div class="avatar" id="meAvatar" style="background:linear-gradient(135deg,#2f6bff,#1f4fd0)">?</div>
+      <div class="avatar" id="meAvatar" style="background:linear-gradient(135deg,#005BAA,#2f8ad6)">?</div>
       <div style="flex:1">
         <textarea id="qinput" maxlength="500" placeholder="Tulis pertanyaan / komentar untuk pemateri..."></textarea>
         <div class="composer-foot">
@@ -152,9 +184,14 @@
     <div id="list"></div>
   </div>
 
+  <footer class="foot"><div class="foot-in">
+    <div class="astra-logo"><span class="mk"></span>ASTRA</div>
+    <div class="credit">Dibuat oleh <span>System Development — GA Department</span></div>
+    <div class="sub">© 2026 · PT Astra International Tbk</div>
+  </div></footer>
+
   <div class="toast" id="toast"></div>
 
-  <!-- Firebase compat (script biasa, jalan walau dobel-klik) -->
   <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
