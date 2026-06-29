@@ -84,6 +84,8 @@
     .composer-foot{display:flex;gap:10px;align-items:center;margin-top:10px}
     .composer-foot input{flex:1;padding:12px 14px;border-radius:999px}
     .counter{font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+    input.err{border-color:#e0245e !important;box-shadow:0 0 0 4px rgba(224,36,94,.14) !important;background:#fff5f8 !important}
+    .field-err{display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin:8px 2px 0}
 
     .btn{appearance:none;border:none;cursor:pointer;background:var(--astra);color:#fff;font:inherit;font-weight:800;
       padding:13px 26px;border-radius:999px;box-shadow:0 6px 18px rgba(0,91,170,.35);transition:transform .08s,box-shadow .15s,background .15s}
@@ -198,10 +200,11 @@
       <div style="flex:1">
         <textarea id="qinput" maxlength="500" placeholder="Tulis pertanyaan / komentar untuk pemateri..."></textarea>
         <div class="composer-foot">
-          <input type="text" id="ninput" maxlength="40" placeholder="Nama (opsional)" />
+          <input type="text" id="ninput" maxlength="40" placeholder="Nama / inisial Anda *" />
           <span class="counter" id="counter">0/500</span>
           <button class="btn" id="sendBtn">Kirim</button>
         </div>
+        <div class="field-err" id="nameErr">Silahkan isi Nama Anda</div>
       </div>
     </div>
 

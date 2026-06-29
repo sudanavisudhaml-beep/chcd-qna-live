@@ -146,7 +146,22 @@
 
     $("ninput").value = localStorage.getItem("chcd_name") || "";
     refreshAvatar();
-    $("ninput").addEventListener("input", function () { localStorage.setItem("chcd_name", $("ninput").value); refreshAvatar(); });
+    $("ninput").addEventListener("input", function () { localStorage.setItem("chcd_name", $("ninput").value); refreshAvatar(); nameError(false); });
+    function nameError(show) {
+      var n = $("ninput"), e = $("nameErr");
+      if (show) {
+        n.style.setProperty("border-color", "#e0245e", "important");
+        n.style.setProperty("box-shadow", "0 0 0 4px rgba(224,36,94,.16)", "important");
+        n.style.setProperty("background", "#fff5f8", "important");
+        if (e) e.style.display = "block";
+        n.focus();
+      } else {
+        n.style.removeProperty("border-color");
+        n.style.removeProperty("box-shadow");
+        n.style.removeProperty("background");
+        if (e) e.style.display = "none";
+      }
+    }
     function refreshAvatar() { var n = ($("ninput").value || "").trim(); $("meAvatar").textContent = n ? n[0].toUpperCase() : "?"; $("meAvatar").style.background = avColor(n || "?"); }
 
     if (!DB.configured()) {
@@ -156,6 +171,7 @@
     $("qinput").addEventListener("input", function (e) { $("counter").textContent = e.target.value.length + "/500"; });
     $("sendBtn").addEventListener("click", function () {
       var text = $("qinput").value.trim();
+      if (!$("ninput").value.trim()) { nameError(true); toast("Isi nama Anda dulu"); return; }
       if (!text) { toast("Tulis sesuatu dulu ya"); return; }
       $("sendBtn").disabled = true;
       DB.add(text, $("ninput").value).then(function () { $("qinput").value = ""; $("counter").textContent = "0/500"; toast("Terkirim! 🙌"); })
@@ -173,6 +189,7 @@
     window.__sendReply = function (id) {
       var inp = $("ri_" + id), text = inp.value.trim();
       if (!text) { toast("Tulis balasan dulu"); return; }
+      if (!$("ninput").value.trim()) { nameError(true); toast("Isi nama Anda dulu"); return; }
       inp.disabled = true;
       DB.reply(id, text, $("ninput").value, admin).then(function () { inp.value = ""; toast(admin ? "Balasan presenter terkirim ✓" : "Balasan terkirim"); })
         .catch(function () { toast("Gagal membalas"); }).then(function () { var i2 = $("ri_" + id); if (i2) i2.disabled = false; });
