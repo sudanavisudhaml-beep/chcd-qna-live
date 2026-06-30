@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QUERY — Kopdar CHCD</title>
+  <title>QUERY — Suara Insan Astra</title>
   <link rel="icon" type="image/png" href="query-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,29 +19,35 @@
     body{font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
       color:var(--ink);background:#f6f9fc;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
 
-    /* Bubble dekoratif latar (ala Mentimeter) */
     .bg-blobs{position:fixed;inset:0;overflow:hidden;z-index:-1;pointer-events:none}
     .blob{position:absolute;border-radius:50%;filter:blur(8px);opacity:.5}
     .blob.b1{width:260px;height:260px;background:radial-gradient(circle at 30% 30%,#bcd6f5,#e9f2fb);top:-70px;left:-60px}
     .blob.b2{width:180px;height:180px;background:radial-gradient(circle at 30% 30%,#d7e6fa,#f3f8fd);top:120px;right:-50px}
     .blob.b3{width:140px;height:140px;background:radial-gradient(circle at 30% 30%,#cfe0f8,#eef5fd);bottom:60px;left:-40px;opacity:.4}
 
-    /* Navbar Astra */
-    .nav{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.9);backdrop-filter:saturate(160%) blur(8px);
-      border-bottom:1px solid var(--line)}
+    .nav{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.9);backdrop-filter:saturate(160%) blur(8px);border-bottom:1px solid var(--line)}
     .nav-in{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
     .astra-logo{display:inline-flex;align-items:center;gap:9px;font-weight:900;font-size:1.32rem;letter-spacing:.02em;color:var(--astra);text-decoration:none}
     .astra-logo .mk{width:13px;height:13px;border-radius:3px;background:linear-gradient(135deg,var(--astra),var(--astra-light));transform:rotate(45deg)}
-    .nav-tag{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
-      background:var(--astra-soft);border:1px solid #d4e4f6;padding:5px 11px;border-radius:999px;white-space:nowrap}
+    .astra-img{height:30px;width:auto;display:block}
+    .astra-logo .astra-fallback{display:none;align-items:center;gap:9px}
+    .astra-logo .astra-fallback .mk{width:13px;height:13px;border-radius:3px;background:linear-gradient(135deg,var(--astra),var(--astra-light));transform:rotate(45deg)}
+    .nav .nlink{font-size:.8rem;font-weight:700;color:var(--astra-dark);text-decoration:none;border:2px solid var(--line);background:#fff;padding:7px 13px;border-radius:999px;white-space:nowrap;cursor:pointer}
+    .nav .nlink:hover{background:var(--astra-soft)}
 
     .wrap{max-width:680px;margin:0 auto;padding:8px 16px 40px;width:100%;flex:1}
+    .page{max-width:520px;margin:0 auto;padding:18px 16px 40px;width:100%;flex:1}
 
-    /* Hero QUERY (gaya Astra: heavy putih di atas biru) */
+    /* Brand kecil di landing/dashboard */
+    .brand{text-align:center;margin:22px 0 22px}
+    .brand img{height:60px;width:auto}
+    .brand .bfallback{display:none;font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:2rem;color:var(--astra-dark)}
+    .brand .bsub{margin-top:8px;font-size:.92rem;color:var(--muted);font-style:italic;font-weight:600}
+
+    /* Hero QUERY (session) */
     .hero{position:relative;overflow:hidden;text-align:center;color:#fff;margin:22px 0 26px;padding:30px 22px 28px;border-radius:28px;
       background:linear-gradient(155deg,#0a74c8 0%,#005BAA 52%,#00407a 100%);box-shadow:0 18px 44px rgba(0,71,140,.30);
       display:flex;flex-direction:column;align-items:center}
-    /* lingkaran sonar (echo logo QUERY) */
     .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.12)}
     .hero::before{width:240px;height:240px;top:-90px;right:-70px}
     .hero::after{width:150px;height:150px;bottom:-70px;left:-40px}
@@ -50,24 +56,14 @@
       border-radius:999px;padding:6px 15px;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff;backdrop-filter:blur(4px)}
     .dot{width:8px;height:8px;border-radius:50%;background:#ff5a5c;animation:pulse 1.6s infinite}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,92,.6)}70%{box-shadow:0 0 0 9px rgba(255,90,92,0)}100%{box-shadow:0 0 0 0 rgba(255,90,92,0)}}
-    /* Kartu putih berisi logo full QUERY */
     .logo-card{display:inline-block;background:#fff;border-radius:18px;padding:16px 26px;margin:16px 0 2px;box-shadow:0 12px 28px rgba(0,0,0,.20)}
     .query-logo-img{height:78px;width:auto;max-width:78vw;display:block}
-    .query-logo-fallback{display:none;flex-direction:column;align-items:center;line-height:1}
-    .query-logo-fallback .ql-name{font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:2.5rem;color:#0e3460;letter-spacing:.01em}
-    .query-logo-fallback .ql-sub{font-size:.78rem;font-weight:600;color:#7c8aa0;letter-spacing:.16em;text-transform:uppercase;margin-top:4px}
     .hero .tagline{margin:14px 0 0;font-size:1.04rem;font-weight:600;font-style:italic;color:rgba(255,255,255,.95)}
     .hero .event{display:inline-block;margin-top:16px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);
       padding:9px 22px;border-radius:999px;font-weight:800;font-size:.96rem;letter-spacing:.01em;backdrop-filter:blur(4px)}
     .hero .materi{display:block;margin:11px auto 0;max-width:32ch;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
       padding:8px 18px;border-radius:16px;font-weight:600;font-size:.84rem;line-height:1.35;color:rgba(255,255,255,.96)}
 
-    /* Logo Astra (gambar + fallback wordmark) */
-    .astra-img{height:30px;width:auto;display:block}
-    .astra-logo .astra-fallback{display:none;align-items:center;gap:9px}
-    .astra-logo .astra-fallback .mk{width:13px;height:13px;border-radius:3px;background:linear-gradient(135deg,var(--astra),var(--astra-light));transform:rotate(45deg)}
-
-    /* Centang biru presenter */
     .verified{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#1d9bf0;color:#fff;font-size:9px;font-weight:900;margin-left:5px;vertical-align:middle}
     .av-wrap{position:relative;flex-shrink:0}
     .av-check{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;background:#1d9bf0;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;line-height:1}
@@ -76,7 +72,6 @@
     .banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:16px;padding:13px 15px;font-size:.86rem;margin-bottom:16px}
     .banner code{background:#fde9d3;padding:1px 6px;border-radius:6px;font-size:.82em}
 
-    /* Composer */
     .composer{display:flex;gap:12px;align-items:flex-start;margin-bottom:20px}
     textarea,input[type=text],input[type=password]{width:100%;border:2px solid var(--line);border-radius:16px;padding:14px 15px;font:inherit;
       color:var(--ink);background:var(--astra-soft2);transition:border-color .15s,box-shadow .15s,background .15s;resize:vertical}
@@ -86,7 +81,6 @@
     .composer-foot input{flex:1 1 100%;padding:12px 14px;border-radius:999px}
     .composer-foot .btn{margin-left:auto}
     .counter{font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-    input.err{border-color:#e0245e !important;box-shadow:0 0 0 4px rgba(224,36,94,.14) !important;background:#fff5f8 !important}
     .field-err{display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin:8px 2px 0}
 
     .btn{appearance:none;border:none;cursor:pointer;background:var(--astra);color:#fff;font:inherit;font-weight:800;
@@ -95,6 +89,7 @@
     .btn:active{transform:translateY(0)}
     .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
     .btn.small{padding:9px 17px;font-size:.85rem}
+    .btn.block{width:100%;justify-content:center;display:flex}
     .btn.ghost{background:#fff;color:var(--muted);border:2px solid var(--line);box-shadow:none;font-weight:700}
     .btn.ghost:hover{background:var(--astra-soft2);color:var(--ink);transform:none}
     .btn.ghost.danger{color:#c0392b} .btn.ghost.danger:hover{background:#fdeceb}
@@ -104,14 +99,11 @@
     .bar .cnt{color:var(--muted);font-weight:700;font-size:.95rem}
     .bar .grow{flex:1}
 
-    .avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-      font-weight:800;color:#fff;font-size:1.02rem;box-shadow:var(--shadow-sm)}
+    .avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:1.02rem;box-shadow:var(--shadow-sm)}
     .avatar.sm{width:30px;height:30px;font-size:.8rem}
 
-    /* Kartu pertanyaan = bubble */
     #list{display:flex;flex-direction:column;gap:15px}
-    .post{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-sm);padding:18px 20px;
-      transition:box-shadow .18s,transform .18s}
+    .post{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-sm);padding:18px 20px;transition:box-shadow .18s,transform .18s}
     .post:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
     .post-head{display:flex;gap:11px;align-items:center;margin-bottom:10px}
     .cname{font-weight:800;font-size:.93rem}
@@ -124,7 +116,6 @@
     .answerbox .lbl{font-size:.7rem;font-weight:800;color:var(--astra-dark);text-transform:uppercase;letter-spacing:.04em}
     .answerbox .txt{font-size:.98rem;margin-top:3px}
 
-    /* Action = bubble button ala Mentimeter */
     .actions{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}
     .act{appearance:none;cursor:pointer;font:inherit;font-size:.86rem;font-weight:700;background:#fff;
       border:2px solid var(--line);color:var(--muted);padding:9px 17px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;
@@ -134,8 +125,6 @@
     .act:active{transform:translateY(0) scale(.97)}
     .act.on.like{color:#fff;border-color:var(--astra);background:linear-gradient(135deg,var(--astra),#2f8ad6);box-shadow:0 6px 16px rgba(0,91,170,.4)}
     .act.on.like b{color:#fff}
-    .act.on.love{color:#fff;border-color:var(--love);background:linear-gradient(135deg,#e0245e,#ff5e87);box-shadow:0 6px 16px rgba(224,36,94,.4)}
-    .act.on.love b{color:#fff}
     .act.admin{border-style:dashed;color:var(--astra-dark);border-color:#bcd6f5;background:var(--astra-soft2)}
     .act.admin.danger{color:#c0392b;border-color:#f1b6b1;background:#fdf1f0}
 
@@ -151,21 +140,39 @@
 
     .empty{text-align:center;color:var(--muted);padding:46px 16px;font-size:.95rem}
 
-    /* Tombol presenter */
-    .admin-toggle{position:fixed;top:64px;right:14px;z-index:25;background:#fff;border:2px solid var(--line);border-radius:999px;
-      padding:9px 16px;font:inherit;font-weight:700;font-size:.8rem;color:var(--muted);cursor:pointer;box-shadow:var(--shadow-sm)}
-    .admin-toggle:hover{color:var(--astra);border-color:#cfe0f5}
-    .admin-toggle.on{background:var(--ok-soft);color:var(--ok);border-color:#b7e4c7}
+    /* ===== Auth / Landing ===== */
+    .seg{display:flex;background:var(--astra-soft2);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:16px}
+    .seg button{flex:1;border:none;background:transparent;font:inherit;font-weight:800;color:var(--muted);padding:10px;border-radius:999px;cursor:pointer}
+    .seg button.active{background:#fff;color:var(--astra);box-shadow:var(--shadow-sm)}
+    label.fld{display:block;font-size:.82rem;font-weight:700;color:var(--muted);margin:12px 0 6px}
+    .hintline{font-size:.78rem;color:var(--muted);margin-top:7px}
+    h3.sec{font-size:1.06rem;margin:0 0 4px;font-weight:800}
+    .center{text-align:center} .muted{color:var(--muted)}
+    .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.78rem;font-weight:800;letter-spacing:.06em;margin:20px 0;text-transform:uppercase}
+    .divider::before,.divider::after{content:"";height:1px;background:var(--line);flex:1}
+    .code-input input{text-align:center;font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.3em;font-size:1.2rem;text-transform:uppercase}
+
+    /* ===== Dashboard ===== */
+    .dash-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 2px 18px}
+    .dash-head .hi{font-size:1.2rem;font-weight:800}
+    .dash-head .hi small{display:block;font-size:.78rem;color:var(--muted);font-weight:600;margin-top:1px}
+    .ev-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-sm);padding:16px;margin-bottom:13px}
+    .ev-card .en{font-weight:800;font-size:1.04rem;line-height:1.3}
+    .ev-card .em{font-size:.85rem;color:var(--muted);margin-top:3px}
+    .ev-code{display:inline-block;margin-top:10px;font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.16em;background:var(--astra-soft);color:var(--astra-dark);padding:6px 13px;border-radius:9px;font-size:.98rem}
+    .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+    .share-box{margin-top:13px;padding:14px;border:1px dashed #bcd6f5;background:var(--astra-soft2);border-radius:14px;text-align:center;display:none}
+    .share-box.open{display:block}
+    .share-box img{width:172px;height:172px;background:#fff;border-radius:10px;padding:6px}
+    .share-box .lnk{font-size:.76rem;color:var(--astra-dark);word-break:break-all;margin-top:9px;font-weight:600}
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--astra-dark);font-weight:800;font-size:.85rem;text-decoration:none;cursor:pointer;background:none;border:none;padding:0;margin:2px 0 12px}
 
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
 
-    /* Footer credit / branding */
     .foot{margin-top:auto;border-top:1px solid var(--line);background:#fff}
     .foot-in{max-width:760px;margin:0 auto;padding:22px 16px;text-align:center;color:var(--muted)}
-    .foot .astra-logo{font-size:1.05rem;justify-content:center;margin-bottom:8px}
-    .foot .astra-img{height:26px}
     .foot .credit{font-size:.86rem;font-weight:700;color:var(--ink)}
     .foot .credit span{color:var(--astra)}
     .foot .sub{font-size:.76rem;margin-top:3px}
@@ -179,46 +186,10 @@
       <img src="astra-logo.png" alt="ASTRA" class="astra-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" />
       <span class="astra-fallback"><span class="mk"></span>ASTRA</span>
     </a>
+    <span id="navRight"></span>
   </div></nav>
 
-  <button class="admin-toggle" id="adminBtn">🔑 Presenter</button>
-
-  <div class="wrap">
-    <div class="hero">
-      <span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>
-      <div class="logo-card">
-        <img src="query-logo.png" alt="QUERY — Suara Insan Astra" class="query-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-        <div class="query-logo-fallback"><span class="ql-name" id="appName">QUERY</span><span class="ql-sub">Suara Insan Astra</span></div>
-      </div>
-      <p class="tagline" id="tagline">Malu Bertanya, Sesat di Jalan</p>
-      <span class="event" id="event">Kopdar CHCD</span>
-      <span class="materi" id="materi">Sosialisasi Juklak Pengadaan Barang dan Jasa CHCD</span>
-    </div>
-
-    <div id="warn"></div>
-
-    <div class="card composer">
-      <div class="avatar" id="meAvatar" style="background:linear-gradient(135deg,#005BAA,#2f8ad6)">?</div>
-      <div style="flex:1">
-        <textarea id="qinput" maxlength="500" placeholder="Tulis pertanyaan / komentar untuk pemateri..."></textarea>
-        <div class="composer-foot">
-          <input type="text" id="ninput" maxlength="40" placeholder="Nama / inisial Anda *" />
-          <span class="counter" id="counter">0/500</span>
-          <button class="btn" id="sendBtn">Kirim</button>
-        </div>
-        <div class="field-err" id="nameErr">Silahkan isi Nama Anda</div>
-      </div>
-    </div>
-
-    <div class="bar">
-      <h2>Diskusi</h2>
-      <span class="cnt" id="liveCount"></span>
-      <div class="grow"></div>
-      <button class="btn ghost small" id="sortBtn">Urutkan: Teratas</button>
-    </div>
-
-    <div id="list"></div>
-  </div>
+  <div id="view"></div>
 
   <footer class="foot"><div class="foot-in">
     <div class="credit">Dibuat oleh <span>System Development — GA Department</span></div>
@@ -231,6 +202,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
-  <script>App.initAudience();</script>
+  <script>App.boot();</script>
 </body>
 </html>
