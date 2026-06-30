@@ -81,8 +81,9 @@
       color:var(--ink);background:var(--astra-soft2);transition:border-color .15s,box-shadow .15s,background .15s;resize:vertical}
     textarea{min-height:80px}
     textarea:focus,input:focus{outline:none;border-color:var(--astra);box-shadow:0 0 0 4px var(--astra-soft);background:#fff}
-    .composer-foot{display:flex;gap:10px;align-items:center;margin-top:10px}
-    .composer-foot input{flex:1;padding:12px 14px;border-radius:999px}
+    .composer-foot{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+    .composer-foot input{flex:1 1 100%;padding:12px 14px;border-radius:999px}
+    .composer-foot .btn{margin-left:auto}
     .counter{font-size:.78rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
     input.err{border-color:#e0245e !important;box-shadow:0 0 0 4px rgba(224,36,94,.14) !important;background:#fff5f8 !important}
     .field-err{display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin:8px 2px 0}
@@ -219,10 +220,6 @@
   </div>
 
   <footer class="foot"><div class="foot-in">
-    <div class="astra-logo">
-      <img src="astra-logo.png" alt="ASTRA" class="astra-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" />
-      <span class="astra-fallback"><span class="mk"></span>ASTRA</span>
-    </div>
     <div class="credit">Dibuat oleh <span>System Development — GA Department</span></div>
     <div class="sub">© 2026 · PT Astra International Tbk</div>
   </div></footer>
