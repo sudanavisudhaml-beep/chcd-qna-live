@@ -19,6 +19,36 @@
   var $ = function (id) { return document.getElementById(id); };
   var view = function () { return $("view"); };
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  // Format ringan: **tebal** dan *miring* (aman: escape dulu, baru format)
+  function mdInline(s) {
+    var h = esc(s);
+    h = h.replace(/\*\*([^\n]+?)\*\*/g, "<strong>$1</strong>");
+    h = h.replace(/\*([^\n]+?)\*/g, "<em>$1</em>");
+    return h;
+  }
+  // Bungkus teks terpilih di textarea dengan penanda bold/italic
+  function fmt(id, type) {
+    var ta = document.getElementById(id); if (!ta) return;
+    var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, mark = (type === "bold" ? "**" : "*");
+    var body = v.slice(s, e) || (type === "bold" ? "teks tebal" : "teks miring");
+    ta.value = v.slice(0, s) + mark + body + mark + v.slice(e);
+    ta.focus();
+    ta.selectionStart = s + mark.length; ta.selectionEnd = s + mark.length + body.length;
+    ta.dispatchEvent(new Event("input"));
+  }
+  function fmtKey(e, id) {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      var k = (e.key || "").toLowerCase();
+      if (k === "b") { e.preventDefault(); fmt(id, "bold"); }
+      else if (k === "i") { e.preventDefault(); fmt(id, "italic"); }
+    }
+  }
+  var fmtBar = function (id) {
+    return '<div class="fmt-bar">' +
+      '<button type="button" class="fmt" title="Tebal (Ctrl+B)" onmousedown="event.preventDefault()" onclick="QUERY.fmt(\'' + id + '\',\'bold\')"><b>B</b></button>' +
+      '<button type="button" class="fmt" title="Miring (Ctrl+I)" onmousedown="event.preventDefault()" onclick="QUERY.fmt(\'' + id + '\',\'italic\')"><i>I</i></button>' +
+      '<span class="fmt-hint">**tebal** · *miring*</span></div>';
+  };
   function initial(name) { var n = (name || "A").trim(); return n ? n[0].toUpperCase() : "A"; }
   function tsOf(q) { return q.createdAt && q.createdAt.seconds ? q.createdAt.seconds * 1000 : 0; }
   function slug(s) { return String(s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
@@ -295,7 +325,8 @@
       '<div class="card composer">' +
         '<div class="avatar" id="meAvatar" style="background:linear-gradient(135deg,#005BAA,#2f8ad6)">?</div>' +
         '<div style="flex:1">' +
-          '<textarea id="qinput" maxlength="500" placeholder="Tulis pertanyaan / komentar untuk pemateri..."></textarea>' +
+          '<textarea id="qinput" maxlength="500" placeholder="Tulis pertanyaan / komentar untuk pemateri..." onkeydown="QUERY.fmtKey(event,\'qinput\')"></textarea>' +
+          fmtBar("qinput") +
           '<div class="composer-foot">' +
             '<input type="text" id="ninput" maxlength="40" placeholder="Nama / inisial Anda *" />' +
             '<span class="counter" id="counter">0/500</span>' +
@@ -371,7 +402,7 @@
     var html = list.map(function (rp) {
       return '<div class="reply">' + avatarHTML(rp.name, true, rp.presenter) +
         '<div class="reply-body"><span class="cname">' + esc(rp.name || "Anonim") + '</span>' + (rp.presenter ? vcheck() : "") + ' <span class="ctime">' + ago(rp.ts) + '</span>' +
-        '<div class="ctext">' + esc(rp.text) + '</div></div></div>';
+        '<div class="ctext">' + mdInline(rp.text) + '</div></div></div>';
     }).join("");
     var comp = sess.openReply[q.id] ? '<div class="reply-composer">' + avatarHTML($("ninput") ? $("ninput").value : "", true, sess.isOwner) +
       '<input type="text" id="ri_' + q.id + '" maxlength="300" placeholder="Tulis balasan..." onkeydown="if(event.key===\'Enter\')QUERY.sendReply(\'' + q.id + '\')" />' +
@@ -382,7 +413,8 @@
   function adminBlock(q) {
     if (!sess.isOwner) return "";
     if (sess.openAnswer[q.id]) {
-      return '<div class="answer-edit"><textarea id="ans_' + q.id + '" placeholder="Ketik jawaban yang akan tampil ke semua audience...">' + esc(q.answer || "") + '</textarea>' +
+      return '<div class="answer-edit"><textarea id="ans_' + q.id + '" placeholder="Ketik jawaban yang akan tampil ke semua audience..." onkeydown="QUERY.fmtKey(event,\'ans_' + q.id + '\')">' + esc(q.answer || "") + '</textarea>' +
+        fmtBar("ans_" + q.id) +
         '<div class="row-actions"><button class="btn small" onclick="QUERY.saveAnswer(\'' + q.id + '\')">Simpan &amp; tampilkan</button>' +
         '<button class="btn ghost small" onclick="QUERY.openAnswer(\'' + q.id + '\')">Batal</button>' +
         (q.answered ? '<button class="btn ghost small danger" onclick="QUERY.unanswer(\'' + q.id + '\')">Tandai belum</button>' : '') + '</div></div>';
@@ -407,8 +439,8 @@
       return '<div class="post"><div class="post-head"><div class="avatar" style="background:' + avColor(q.name) + '">' + esc(initial(q.name)) + '</div>' +
         '<div><span class="cname">' + esc(q.name || "Anonim") + '</span> <span class="ctime">' + ago(tsOf(q)) + '</span>' +
         (q.answered ? ' <span class="badge answered">Dijawab pemateri</span>' : "") + '</div></div>' +
-        '<div class="qtext">' + esc(q.text) + '</div>' +
-        (q.answered && q.answer ? '<div class="answerbox"><div class="lbl">📌 Jawaban pemateri ' + vcheck() + '</div><div class="txt">' + esc(q.answer) + '</div></div>' : "") +
+        '<div class="qtext">' + mdInline(q.text) + '</div>' +
+        (q.answered && q.answer ? '<div class="answerbox"><div class="lbl">📌 Jawaban pemateri ' + vcheck() + '</div><div class="txt">' + mdInline(q.answer) + '</div></div>' : "") +
         reactBtns(q) + adminBlock(q) + repliesBlock(q) + '</div>';
     }).join("");
 
@@ -421,7 +453,8 @@
     go: go, seg: seg, logout: function () { clearHost(); setNav(); toast("Keluar"); go("/"); },
     login: doLogin, register: doRegister, join: doJoin,
     createEvent: doCreateEvent, share: doShare, copy: doCopy, delEvent: doDelEvent,
-    react: react, toggleReply: toggleReply, sendReply: sendReply, openAnswer: openAnswer, saveAnswer: saveAnswer, unanswer: unanswer, delQ: delQ
+    react: react, toggleReply: toggleReply, sendReply: sendReply, openAnswer: openAnswer, saveAnswer: saveAnswer, unanswer: unanswer, delQ: delQ,
+    fmt: fmt, fmtKey: fmtKey
   };
 
   function boot() { window.addEventListener("hashchange", route); route(); }
