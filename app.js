@@ -533,6 +533,7 @@
           '<label class="fld">Jenis</label>' +
           '<select id="nfType" onchange="QUERY.nfType()">' + FTYPES.map(function (t) { return '<option value="' + t.v + '">' + esc(t.label) + '</option>'; }).join("") + '</select>' +
           '<label class="fld">Pertanyaan</label><input type="text" id="nfLabel" maxlength="120" placeholder="Tulis pertanyaan..." />' +
+          '<label class="fld">Keterangan / petunjuk (opsional)</label><input type="text" id="nfDesc" maxlength="200" placeholder="mis. skala, cara mengisi..." />' +
           '<div id="nfOptWrap"><label class="fld">Pilihan jawaban (satu per baris)</label><textarea id="nfOpts" placeholder="Opsi A&#10;Opsi B&#10;Opsi C"></textarea></div>' +
           '<div id="nfMtxWrap" style="display:none">' +
             '<label class="fld">Baris / Pernyataan (satu per baris)</label><textarea id="nfRows" placeholder="Pernyataan 1&#10;Pernyataan 2"></textarea>' +
@@ -571,7 +572,7 @@
   function addField() {
     var type = $("nfType").value, label = ($("nfLabel").value || "").trim();
     if (!label) { toast("Isi pertanyaannya dulu"); return; }
-    var field = { fid: uid().slice(0, 8), type: type, label: label, options: [], required: $("nfReq").checked };
+    var field = { fid: uid().slice(0, 8), type: type, label: label, desc: ($("nfDesc").value || "").trim(), options: [], required: $("nfReq").checked };
     if (needsOptions(type)) { field.options = ($("nfOpts").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean); if (field.options.length < 2) { toast("Beri minimal 2 pilihan jawaban"); return; } }
     if (type === "matrix") {
       field.rows = ($("nfRows").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -579,7 +580,7 @@
       if (field.rows.length < 1 || field.cols.length < 1) { toast("Matriks perlu minimal 1 baris & 1 kolom"); return; }
     }
     builder.fields.push(field);
-    persistBuilder(function () { $("nfLabel").value = ""; $("nfOpts").value = ""; if ($("nfRows")) $("nfRows").value = ""; if ($("nfCols")) $("nfCols").value = ""; $("nfReq").checked = false; renderBuilderList(); toast("Pertanyaan ditambah ✓"); });
+    persistBuilder(function () { $("nfLabel").value = ""; $("nfDesc").value = ""; $("nfOpts").value = ""; if ($("nfRows")) $("nfRows").value = ""; if ($("nfCols")) $("nfCols").value = ""; $("nfReq").checked = false; renderBuilderList(); toast("Pertanyaan ditambah ✓"); });
   }
   function delField(fid) { if (!confirm("Hapus pertanyaan ini?")) return; builder.fields = builder.fields.filter(function (f) { return f.fid !== fid; }); persistBuilder(renderBuilderList); }
   function moveField(fid, dir) {
@@ -595,7 +596,7 @@
     var ev = sess.event, fields = ev.fields || [];
     if (localStorage.getItem("query_sub_" + sess.code)) { showThanks(); return; }
     if (!fields.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Kuesioner") + '<div class="card center">Kuesioner ini belum memiliki pertanyaan.</div></div>'; return; }
-    var body = fields.map(function (f, i) { return '<div class="qfield"><div class="qflabel">' + (i + 1) + '. ' + esc(f.label) + (f.required ? ' <span style="color:#e0245e">*</span>' : '') + '</div>' + fieldInput(f) + '</div>'; }).join("");
+    var body = fields.map(function (f, i) { return '<div class="qfield"><div class="qflabel">' + (i + 1) + '. ' + esc(f.label) + (f.required ? ' <span style="color:#e0245e">*</span>' : '') + '</div>' + (f.desc ? '<div class="qfdesc">' + esc(f.desc) + '</div>' : '') + fieldInput(f) + '</div>'; }).join("");
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Kuesioner") +
       '<div class="card"><label class="fld">Nama / inisial Anda *</label><input type="text" id="respName" maxlength="40" placeholder="Nama Anda" />' +
       '<div class="field-err" id="nameErr">Silahkan isi Nama Anda</div></div>' +
