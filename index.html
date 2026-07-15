@@ -226,6 +226,11 @@
     .mtx select:focus{outline:none;border-color:var(--astra)}
     .mtxres td.mtx-avg{font-weight:800;color:var(--astra-dark)}
     .rf-sub{font-weight:800;font-size:.86rem;color:var(--astra-dark);margin:2px 0 8px}
+    .mtx thead .grpA{background:var(--astra);color:#fff;font-weight:800;letter-spacing:.02em}
+    .mtx thead .grpB{background:#6d34d6;color:#fff;font-weight:800;letter-spacing:.02em}
+    .mtx .mo-sel{width:132px;font-weight:700}
+    .vtag{font-size:.6rem;font-weight:800;background:#efe7fb;color:#6d34d6;padding:1px 6px;border-radius:999px;vertical-align:middle;margin-left:4px}
+    .oitem{padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
 
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
@@ -258,10 +263,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=12"></script>
+  <script src="config.js?v=13"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
   <script>App.boot();</script>
 </body>
 </html>

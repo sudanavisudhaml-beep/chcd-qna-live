@@ -611,17 +611,26 @@
     if (f.type === "rating") { var r = ""; for (var n = 1; n <= 5; n++) r += '<button type="button" class="rate" data-v="' + n + '" onclick="QUERY.pickRate(\'' + f.fid + '\',' + n + ')">' + n + '</button>'; return '<div class="rate-row" id="fi_' + f.fid + '">' + r + '</div>'; }
     if (f.type === "single" || f.type === "multi") { var t = f.type === "single" ? "radio" : "checkbox"; return '<div class="opts" id="fi_' + f.fid + '">' + f.options.map(function (o) { return '<label class="opt"><input type="' + t + '" name="fi_' + f.fid + '" value="' + esc(o) + '" /> <span>' + esc(o) + '</span></label>'; }).join("") + '</div>'; }
     if (f.type === "matrix") {
-      var rows = f.rows || [], cols = f.cols || [];
-      var thead = '<tr><th class="mtx-corner">Pernyataan \\ Kolom</th>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join("") + '</tr>';
+      var rows = f.rows || [], cols = f.cols || [], other = f.otherOptions || [], slots = f.otherSlots || 0;
+      var grp = '<tr><th class="mtx-corner" rowspan="2">Pernyataan</th>';
+      if (cols.length) grp += '<th colspan="' + cols.length + '" class="grpA">' + esc(f.groupA || "Listed Travel Agent") + '</th>';
+      if (slots) grp += '<th colspan="' + slots + '" class="grpB">' + esc(f.groupB || "Vendor Lainnya") + '</th>';
+      grp += '</tr>';
+      var ch = '<tr>';
+      cols.forEach(function (c) { ch += '<th>' + esc(c) + '</th>'; });
+      for (var sl = 0; sl < slots; sl++) { ch += '<th><select id="mo_' + f.fid + '_' + sl + '" class="mo-sel"><option value="">Pilih vendor…</option>' + other.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("") + '</select></th>'; }
+      ch += '</tr>';
       var body = rows.map(function (rw, ri) {
-        return '<tr><td class="mtx-rowh">' + esc(rw) + '</td>' + cols.map(function (cl, ci) {
-          return '<td><select id="m_' + f.fid + '_' + ri + '_' + ci + '"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></td>';
-        }).join("") + '</tr>';
+        var tds = cols.map(function (c, ci) { return '<td><select id="m_' + f.fid + '_' + ri + '_' + ci + '">' + ratingOpts() + '</select></td>'; }).join("");
+        for (var s2 = 0; s2 < slots; s2++) tds += '<td><select id="mr_' + f.fid + '_' + ri + '_' + s2 + '">' + ratingOpts() + '</select></td>';
+        return '<tr><td class="mtx-rowh">' + esc(rw) + '</td>' + tds + '</tr>';
       }).join("");
-      return '<div class="mtx-hint">↔ Geser untuk lihat semua kolom · isi 1–5, kosongkan yang tidak dipakai</div><div class="mtx-wrap"><table class="mtx"><thead>' + thead + '</thead><tbody>' + body + '</tbody></table></div>';
+      var hint = '↔ Geser untuk lihat semua kolom · isi 1–5, kosongkan vendor yang tidak dipakai' + (slots ? ' · untuk vendor non-listed, pilih dari "Vendor Lainnya"' : '');
+      return '<div class="mtx-hint">' + hint + '</div><div class="mtx-wrap"><table class="mtx"><thead>' + grp + ch + '</thead><tbody>' + body + '</tbody></table></div>';
     }
     return "";
   }
+  function ratingOpts() { return '<option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>'; }
   function pickRate(fid, v) { var row = $("fi_" + fid); if (!row) return; row.setAttribute("data-val", v); var bs = row.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("on", parseInt(bs[i].getAttribute("data-v"), 10) <= v); }
   function getFieldValue(f) {
     var el = $("fi_" + f.fid); if (!el) return "";
@@ -630,12 +639,19 @@
     if (f.type === "single") { var r = el.querySelector("input:checked"); return r ? r.value : ""; }
     if (f.type === "multi") { return [].slice.call(el.querySelectorAll("input:checked")).map(function (c) { return c.value; }); }
     if (f.type === "matrix") {
-      var rows = f.rows || [], cols = f.cols || [], obj = {};
-      for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var s = $("m_" + f.fid + "_" + ri + "_" + ci); if (s && s.value) { if (!obj[ri]) obj[ri] = {}; obj[ri][ci] = parseInt(s.value, 10); } }
-      return obj;
+      var rows = f.rows || [], cols = f.cols || [], slots = f.otherSlots || 0, L = {}, O = [];
+      for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var s = $("m_" + f.fid + "_" + ri + "_" + ci); if (s && s.value) { if (!L[ri]) L[ri] = {}; L[ri][ci] = parseInt(s.value, 10); } }
+      for (var sl = 0; sl < slots; sl++) {
+        var vs = $("mo_" + f.fid + "_" + sl); if (!vs || !vs.value) continue;
+        var r = {}, any = false;
+        for (var rj = 0; rj < rows.length; rj++) { var rs = $("mr_" + f.fid + "_" + rj + "_" + sl); if (rs && rs.value) { r[rj] = parseInt(rs.value, 10); any = true; } }
+        if (any) O.push({ v: vs.value, r: r });
+      }
+      return { L: L, O: O };
     }
     return "";
   }
+  function matrixEmpty(val) { return !val || (Object.keys(val.L || {}).length === 0 && (val.O || []).length === 0); }
   function respErr(show) { var n = $("respName"), e = $("nameErr"); if (!n) return; if (show) { n.style.setProperty("border-color", "#e0245e", "important"); n.style.setProperty("box-shadow", "0 0 0 4px rgba(224,36,94,.16)", "important"); if (e) e.style.display = "block"; n.focus(); } else { n.style.removeProperty("border-color"); n.style.removeProperty("box-shadow"); if (e) e.style.display = "none"; } }
   function submitSurvey() {
     var ev = sess.event, fields = ev.fields || [], name = ($("respName").value || "").trim();
@@ -643,7 +659,8 @@
     var answers = {};
     for (var i = 0; i < fields.length; i++) {
       var f = fields[i], val = getFieldValue(f);
-      if (f.required && isEmptyVal(val)) { toast("Lengkapi: " + f.label); var el = $("fi_" + f.fid) || $("m_" + f.fid + "_0_0"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      var empty = f.type === "matrix" ? matrixEmpty(val) : isEmptyVal(val);
+      if (f.required && empty) { toast("Lengkapi: " + f.label); var el = $("fi_" + f.fid) || $("m_" + f.fid + "_0_0"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
       answers[f.fid] = val;
     }
     $("subBtn").disabled = true;
@@ -695,27 +712,39 @@
   }
   function barRow(label, n, pct) { return '<div class="barrow"><span class="blabel">' + esc(label) + '</span><div class="bar"><div class="fill" style="width:' + pct + '%"></div></div><span class="bval">' + n + ' (' + pct + '%)</span></div>'; }
   function mcell(a, ri, ci) { if (!a) return undefined; var ro = a[ri]; if (!ro) return undefined; var v = ro[ci]; return (typeof v === "number") ? v : undefined; }
+  function mL(a) { return a ? (a.L || a) : null; } // dukung bentuk lama {ri:{ci}} & baru {L,O}
   function aggregateMatrix(f, resp) {
     var rows = f.rows || [], cols = f.cols || [];
     var colStat = cols.map(function () { return { sum: 0, n: 0, resp: 0 }; });
     var cell = rows.map(function () { return cols.map(function () { return { sum: 0, n: 0 }; }); });
+    var otherMap = {};
     resp.forEach(function (r) {
       var a = r.answers ? r.answers[f.fid] : null; if (!a) return;
-      var colHas = cols.map(function () { return false; });
+      var L = mL(a), colHas = cols.map(function () { return false; });
       for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) {
-        var v = mcell(a, ri, ci); if (v >= 1 && v <= 5) { colStat[ci].sum += v; colStat[ci].n++; cell[ri][ci].sum += v; cell[ri][ci].n++; colHas[ci] = true; }
+        var v = mcell(L, ri, ci); if (v >= 1 && v <= 5) { colStat[ci].sum += v; colStat[ci].n++; cell[ri][ci].sum += v; cell[ri][ci].n++; colHas[ci] = true; }
       }
       colHas.forEach(function (h, ci) { if (h) colStat[ci].resp++; });
+      (a.O || []).forEach(function (ov) {
+        if (!ov || !ov.v) return; var nm = ov.v; if (!otherMap[nm]) otherMap[nm] = { sum: 0, n: 0, resp: 0 };
+        var rr = ov.r || {}, any = false;
+        Object.keys(rr).forEach(function (k) { var vv = rr[k]; if (typeof vv === "number" && vv >= 1 && vv <= 5) { otherMap[nm].sum += vv; otherMap[nm].n++; any = true; } });
+        if (any) otherMap[nm].resp++;
+      });
     });
-    var colAgg = cols.map(function (name, ci) { var s = colStat[ci]; return { name: name, ci: ci, avg: s.n ? s.sum / s.n : 0, n: s.n, resp: s.resp }; });
-    var ranked = colAgg.slice().sort(function (a, b) { return b.avg - a.avg; });
-    return { rows: rows, cols: cols, colAgg: colAgg, ranked: ranked, cell: cell };
+    var colAgg = cols.map(function (name, ci) { var s = colStat[ci]; return { name: name, ci: ci, avg: s.n ? s.sum / s.n : 0, n: s.n, resp: s.resp, listed: true }; });
+    var otherAgg = Object.keys(otherMap).map(function (name) { var s = otherMap[name]; return { name: name, avg: s.n ? s.sum / s.n : 0, n: s.n, resp: s.resp, listed: false }; });
+    var ranked = colAgg.concat(otherAgg).slice().sort(function (a, b) { return b.avg - a.avg; });
+    return { rows: rows, cols: cols, colAgg: colAgg, otherAgg: otherAgg, ranked: ranked, cell: cell };
   }
-  function respVendorAvg(a, ci, rowCount) { if (!a) return ""; var sum = 0, n = 0; for (var ri = 0; ri < rowCount; ri++) { var v = mcell(a, ri, ci); if (typeof v === "number") { sum += v; n++; } } return n ? (sum / n) : ""; }
+  function respVendorAvg(a, ci, rowCount) { var L = mL(a); if (!L) return ""; var sum = 0, n = 0; for (var ri = 0; ri < rowCount; ri++) { var v = mcell(L, ri, ci); if (typeof v === "number") { sum += v; n++; } } return n ? (sum / n) : ""; }
+  function respOthersText(a) { if (!a || !a.O || !a.O.length) return ""; return a.O.map(function (o) { var rr = o.r || {}, sum = 0, n = 0; Object.keys(rr).forEach(function (k) { if (typeof rr[k] === "number") { sum += rr[k]; n++; } }); return o.v + (n ? " (" + (sum / n).toFixed(2) + ")" : ""); }).join("; "); }
   function matrixRespCell(a, f) {
-    if (!a) return "—"; var rows = f.rows || [], cols = f.cols || [], sum = 0, n = 0, vend = {};
-    for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var v = mcell(a, ri, ci); if (typeof v === "number") { sum += v; n++; vend[ci] = 1; } }
-    return n ? (Object.keys(vend).length + " vendor · Ø " + (sum / n).toFixed(1)) : "—";
+    if (!a) return "—"; var rows = f.rows || [], cols = f.cols || [], L = mL(a), sum = 0, n = 0, vend = {};
+    for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var v = mcell(L, ri, ci); if (typeof v === "number") { sum += v; n++; vend[ci] = 1; } }
+    var ov = 0; (a.O || []).forEach(function (o) { if (!o || !o.v) return; var rr = o.r || {}, got = false; Object.keys(rr).forEach(function (k) { if (typeof rr[k] === "number") { sum += rr[k]; n++; got = true; } }); if (got) ov++; });
+    var tot = Object.keys(vend).length + ov;
+    return n ? (tot + " vendor · Ø " + (sum / n).toFixed(1)) : "—";
   }
   function summaryHTML(fields, resp) {
     if (!fields.length) return "";
@@ -735,17 +764,20 @@
   }
   function matrixCardBody(f, resp) {
     var a = aggregateMatrix(f, resp);
-    var bars = a.ranked.map(function (v) {
+    var rated = a.ranked.filter(function (v) { return v.n > 0; });
+    var bars = (rated.length ? rated : a.ranked).map(function (v) {
       var pct = Math.round(v.avg / 5 * 100);
-      return '<div class="barrow"><span class="blabel">' + esc(v.name) + '</span><div class="bar"><div class="fill" style="width:' + pct + '%"></div></div><span class="bval">' + (v.n ? v.avg.toFixed(2) : "–") + ' · ' + v.resp + ' resp</span></div>';
+      var tag = v.listed ? "" : ' <span class="vtag">lainnya</span>';
+      return '<div class="barrow"><span class="blabel">' + esc(v.name) + tag + '</span><div class="bar"><div class="fill" style="width:' + pct + '%"></div></div><span class="bval">' + (v.n ? v.avg.toFixed(2) : "–") + ' · ' + v.resp + ' resp</span></div>';
     }).join("");
     var thead = '<tr><th>Pernyataan</th>' + a.cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join("") + '</tr>';
     var trs = a.rows.map(function (rw, ri) {
       return '<tr><td class="mtx-rowh">' + esc(rw) + '</td>' + a.cols.map(function (c, ci) { var cc = a.cell[ri][ci]; return '<td class="mtx-avg">' + (cc.n ? (cc.sum / cc.n).toFixed(2) : "—") + '</td>'; }).join("") + '</tr>';
     }).join("");
-    return '<div class="rf-sub">🏆 Peringkat vendor (rata-rata 1–5)</div>' + bars +
-      '<div class="rf-sub" style="margin-top:14px">Rata-rata per pernyataan × vendor</div>' +
-      '<div class="mtx-wrap"><table class="mtx mtxres"><thead>' + thead + '</thead><tbody>' + trs + '</tbody></table></div>';
+    var others = a.otherAgg.length ? ('<div class="rf-sub" style="margin-top:14px">Vendor Lainnya yang dinilai</div>' + a.otherAgg.sort(function (x, y) { return y.avg - x.avg; }).map(function (v) { return '<div class="oitem"><b>' + esc(v.name) + '</b> · ' + (v.n ? v.avg.toFixed(2) : "–") + '/5 · ' + v.resp + ' resp</div>'; }).join("")) : "";
+    return '<div class="rf-sub">🏆 Peringkat vendor (rata-rata 1–5, listed + lainnya)</div>' + bars +
+      '<div class="rf-sub" style="margin-top:14px">Rata-rata per pernyataan × vendor listed</div>' +
+      '<div class="mtx-wrap"><table class="mtx mtxres"><thead>' + thead + '</thead><tbody>' + trs + '</tbody></table></div>' + others;
   }
   function fieldResultCard(f, resp) {
     var head = '<div class="rf-q">' + esc(f.label) + '</div><div class="badge" style="background:var(--astra-soft);color:var(--astra-dark);margin-bottom:10px">' + esc(ftypeLabel(f.type)) + '</div>';
@@ -780,13 +812,13 @@
   function exportSurvey() {
     var ev = sess.event, fields = ev.fields || [], resp = sess.responses || [];
     var header = ["Nama", "Waktu"];
-    fields.forEach(function (f) { if (f.type === "matrix") (f.cols || []).forEach(function (c) { header.push(f.label + " — " + c); }); else header.push(f.label); });
+    fields.forEach(function (f) { if (f.type === "matrix") { (f.cols || []).forEach(function (c) { header.push(f.label + " — " + c); }); header.push(f.label + " — Vendor Lainnya"); } else header.push(f.label); });
     var rows = [header];
     resp.slice().sort(function (a, b) { return tsOf(a) - tsOf(b); }).forEach(function (r) {
       var row = [r.name || "Anonim", tsOf(r) ? new Date(tsOf(r)).toLocaleString("id-ID") : ""];
       fields.forEach(function (f) {
         var v = r.answers ? r.answers[f.fid] : "";
-        if (f.type === "matrix") { var rc = (f.rows || []).length; (f.cols || []).forEach(function (c, ci) { var av = respVendorAvg(v, ci, rc); row.push(av === "" ? "" : Number(av).toFixed(2)); }); }
+        if (f.type === "matrix") { var rc = (f.rows || []).length; (f.cols || []).forEach(function (c, ci) { var av = respVendorAvg(v, ci, rc); row.push(av === "" ? "" : Number(av).toFixed(2)); }); row.push(respOthersText(v)); }
         else row.push(Array.isArray(v) ? v.join(" | ") : (v == null ? "" : String(v)));
       });
       rows.push(row);
