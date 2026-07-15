@@ -125,7 +125,25 @@
   }
   function saveFieldsDB(code, fields) { return db.collection("events").doc(code).update({ fields: fields }); }
   function saveOptionsDB(code, options) { return db.collection("events").doc(code).update({ options: options }); }
-  function voteFor(code, oid, dev, round) { var u = {}; u["voteCounts." + oid] = FV().increment(1); u.lastVote = { oid: oid, ts: Date.now() }; if (dev) u["voters." + dev] = round; return db.collection("events").doc(code).update(u); }
+  // Kunci nama/alias jadi key map Firestore yang valid (huruf/angka/underscore)
+  function vAliasKey(s) { return String(s || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); }
+  // Rekam vote via TRANSACTION: cek alias di server; kalau sudah ada → tolak (1 nama 1 suara, otoritatif di server, bukan cuma di HP)
+  function voteFor(code, oid, dev, round, ak, aname) {
+    var ref = db.collection("events").doc(code), ts = Date.now();
+    return db.runTransaction(function (tx) {
+      return tx.get(ref).then(function (doc) {
+        var d = (doc.exists && doc.data()) || {};
+        var va = d.voterAlias || {};
+        if (ak && va[ak]) { var e = new Error("dup-alias"); e.dupAlias = va[ak]; throw e; }
+        var u = {};
+        u["voteCounts." + oid] = FV().increment(1);
+        u.lastVote = { oid: oid, ts: ts };
+        if (dev) u["voters." + dev] = round;
+        if (ak) u["voterAlias." + ak] = { n: aname, o: oid, t: ts };
+        tx.update(ref, u);
+      });
+    });
+  }
   function subscribeEvent(code, cb) { return db.collection("events").doc(code).onSnapshot(function (d) { if (d.exists) cb(d.data()); }); }
 
   /* ---------- DB: responses (subkoleksi survei per event) ---------- */
@@ -969,6 +987,8 @@
         return v;
       }
     }
+    // Kenali lewat nama/alias yang tersimpan (bertahan walau catatan vote lokal terhapus)
+    try { var ak = vAliasKey(localStorage.getItem("query_alias_" + sess.code)); var va = (sess.event && sess.event.voterAlias) || {}; if (ak && va[ak]) return { oid: va[ak].o, round: round, alias: ak }; } catch (e) {}
     return null;
   }
   function renderVoteSession() {
@@ -979,25 +999,60 @@
   function resetVote() {
     if (!sess.isOwner) return;
     if (!confirm("Reset semua vote ke 0 dan mulai babak baru? Semua orang bisa vote lagi.")) return;
-    var u = { lastVote: FV().delete(), voteRound: uid().slice(0, 10), voters: {} };
+    var u = { lastVote: FV().delete(), voteRound: uid().slice(0, 10), voters: {}, voterAlias: {} };
     (sess.event.options || []).forEach(function (o) { u["voteCounts." + o.oid] = 0; });
     db.collection("events").doc(sess.code).update(u).then(function () { toast("Vote di-reset — mulai dari awal ✓"); }).catch(function () { toast("Gagal reset"); });
   }
   function renderVoteForm() {
     var ev = sess.event, opts = ev.options || [];
     if (!opts.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote") + '<div class="card center">Belum ada opsi untuk dipilih.</div></div>'; return; }
+    var savedAlias = ""; try { savedAlias = localStorage.getItem("query_alias_" + sess.code) || ""; } catch (e) {}
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote — Pilih Tim Anda") +
+      '<div class="card" style="margin-bottom:14px">' +
+        '<label class="fld">Nama / Alias Anda <span style="color:#e0245e">*</span></label>' +
+        '<input type="text" id="vAlias" maxlength="40" autocomplete="off" placeholder="mis. Budi · SVI · Meja 3" value="' + esc(savedAlias) + '" oninput="var e=document.getElementById(\'vAliasErr\');if(e)e.style.display=\'none\';this.style.borderColor=\'\'" />' +
+        '<div id="vAliasErr" style="display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin-top:6px">Silahkan isi Nama/Alias Anda dulu</div>' +
+        '<div class="hintline" style="margin-top:8px">1 nama = 1 suara. Nama yang sudah vote tidak bisa vote lagi.</div>' +
+      '</div>' +
       '<div class="vote-grid">' + opts.map(function (o) { return '<button class="vote-card" onclick="QUERY.vote(\'' + o.oid + '\')"><img class="flag-md" src="' + flagUrl(o.code) + '" onerror="this.style.display=\'none\'" /><div class="vc-name">' + esc(o.name) + '</div></button>'; }).join("") + '</div>' +
-      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 — cukup sekali, langsung tercatat</p></div>';
+      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Isi nama, lalu ketuk tim jagoanmu 🎉 — cukup sekali, langsung tercatat</p></div>';
   }
   function doVote(oid) {
-    if (sess._voting || getMyVote()) { toast("Anda sudah vote 🙌 (1 HP 1 suara)"); renderVoteSession(); return; }
+    if (sess._voting) return;
+    var inp = $("vAlias"), aliasRaw = ((inp && inp.value) || "").trim(), ak = vAliasKey(aliasRaw);
+    if (!ak) { var er = $("vAliasErr"); if (er) er.style.display = "block"; if (inp) { inp.style.borderColor = "#e0245e"; inp.focus(); } toast("Isi Nama/Alias Anda dulu ✍️"); return; }
+    var round = (sess.event && sess.event.voteRound) || "";
+    if (getMyVote()) { toast("Perangkat ini sudah vote 🙌"); renderVoteSession(); return; }
     sess._voting = true; ensureAudio();
-    var dev = getDeviceId(), round = (sess.event && sess.event.voteRound) || "";
-    var rec = JSON.stringify({ oid: oid, round: round });
-    try { localStorage.setItem("query_vote_" + sess.code, rec); } catch (e) {} setCookie("qv_" + sess.code, rec);
-    voteFor(sess.code, oid, dev, round).then(function () { toast("Vote terkirim! 🎉"); renderVoteSession(); })
-      .catch(function () { sess._voting = false; try { localStorage.removeItem("query_vote_" + sess.code); } catch (e) {} toast("Gagal vote"); });
+    var dev = getDeviceId();
+    try { localStorage.setItem("query_alias_" + sess.code, aliasRaw); } catch (e) {}
+    voteFor(sess.code, oid, dev, round, ak, aliasRaw).then(function () {
+      var rec = JSON.stringify({ oid: oid, round: round, alias: ak });
+      try { localStorage.setItem("query_vote_" + sess.code, rec); } catch (e) {} setCookie("qv_" + sess.code, rec);
+      toast("Vote terkirim! 🎉"); renderVoteSession();
+    }).catch(function (err) {
+      sess._voting = false;
+      if (err && err.message === "dup-alias") {
+        var prev = err.dupAlias || {}; var rec = JSON.stringify({ oid: prev.o || oid, round: round, alias: ak });
+        try { localStorage.setItem("query_vote_" + sess.code, rec); } catch (e) {} setCookie("qv_" + sess.code, rec);
+        toast("Nama \"" + aliasRaw + "\" sudah vote 🙌 — tidak bisa 2×"); renderVoteSession();
+      } else { toast("Gagal vote, coba lagi"); }
+    });
+  }
+  // Unduh hasil vote (nama/alias + pilihan + waktu) sebagai CSV — untuk host
+  function exportVotes() {
+    var ev = sess.event, va = (ev && ev.voterAlias) || {}, opts = (ev && ev.options) || [];
+    var nameOf = {}; opts.forEach(function (o) { nameOf[o.oid] = o.name; });
+    var arr = Object.keys(va).map(function (k) { return va[k]; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+    var rows = [["No", "Nama/Alias", "Pilihan", "Waktu"]];
+    arr.forEach(function (r, i) { rows.push([i + 1, r.n || "", nameOf[r.o] || r.o || "", r.t ? new Date(r.t).toLocaleString("id-ID") : ""]); });
+    rows.push([""]); rows.push(["REKAP SUARA", "", "", ""]);
+    opts.forEach(function (o) { rows.push(["", o.name, ((ev.voteCounts || {})[o.oid]) || 0, ""]); });
+    rows.push(["", "TOTAL PEMILIH", arr.length, ""]);
+    var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "hasil-vote-" + ev.code + ".csv"; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+    toast("Hasil vote diunduh 📥");
   }
   // Grid pixel: 100 sel (10×10), urutan reveal acak-deterministik
   var PXN = 100;
@@ -1031,6 +1086,7 @@
     }).join("");
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
       (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
+        '<button class="vs-btn" title="Unduh hasil (CSV: nama + pilihan)" onclick="QUERY.exportVotes()">📥</button>' +
         '<button class="vs-btn" title="Reset vote (babak baru)" onclick="QUERY.resetVote()">🔄</button>' : '') +
       '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
     view().innerHTML =
@@ -1107,7 +1163,7 @@
     fmt: fmt, fmtKey: fmtKey,
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
-    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote,
+    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote, exportVotes: exportVotes,
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 
