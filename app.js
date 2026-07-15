@@ -857,13 +857,12 @@
   // Emblem World Cup: pakai worldcup.png bila ada di repo, kalau tidak tampilkan emblem buatan
   function wcBadgeHTML() {
     return '<div class="wc-badge">' +
-      '<img class="wc-img" src="worldcup.png" alt="World Cup 2026" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />' +
-      '<div class="wc-fb">' +
-        '<span class="wc-ico">🏆</span>' +
-        '<span class="wc-t1">WORLD CUP</span>' +
-        '<span class="wc-t2">2026</span>' +
-        '<span class="wc-sub">⚽ 11 Juni – 19 Juli 2026</span>' +
-      '</div></div>';
+      '<div class="wc-logo">' +
+        '<img class="wc-img" src="worldcup.png" alt="World Cup 2026" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />' +
+        '<div class="wc-fb"><span class="wc-ico">🏆</span><span class="wc-t1">WORLD CUP</span><span class="wc-t2">2026</span></div>' +
+      '</div>' +
+      '<div class="wc-date">⚽ 11 Juni – 19 Juli 2026</div>' +
+    '</div>';
   }
 
   /* ----- Efek: suara "ting", confetti, popup notif ----- */
