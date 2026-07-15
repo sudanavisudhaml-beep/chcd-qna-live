@@ -232,6 +232,26 @@
     .vtag{font-size:.6rem;font-weight:800;background:#efe7fb;color:#6d34d6;padding:1px 6px;border-radius:999px;vertical-align:middle;margin-left:4px}
     .oitem{padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
 
+    /* ===== Vote ===== */
+    .wrap-wide{max-width:1080px}
+    .vote-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .vote-card{appearance:none;cursor:pointer;background:#fff;border:2px solid var(--line);border-radius:18px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:11px;font:inherit;box-shadow:var(--shadow-sm);transition:transform .1s,border-color .12s,box-shadow .12s}
+    .vote-card:hover{border-color:var(--astra);transform:translateY(-2px);box-shadow:var(--shadow)}
+    .vote-card:active{transform:scale(.97)}
+    .flag-md{width:88px;height:59px;object-fit:cover;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+    .vc-name{font-weight:800;font-size:1.05rem;text-align:center}
+    .flag-sm{width:42px;height:28px;object-fit:cover;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,.2);flex-shrink:0}
+    .vlive-head{text-align:center;margin:8px 0 18px}
+    .vtitle{font-size:1.6rem;font-weight:900;margin:12px 0 4px;letter-spacing:-.02em}
+    .vtotal{color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
+    .vlive{display:grid;gap:14px}
+    .vlive-1{grid-template-columns:1fr} .vlive-2,.vlive-3,.vlive-4{grid-template-columns:1fr 1fr}
+    .vq{position:relative;background:linear-gradient(160deg,#eef5fd,#dfeafb);border:1px solid var(--line);border-radius:22px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:hidden;padding:18px}
+    .vflag{width:28px;height:28px;border-radius:50%;background-size:cover;background-position:center;box-shadow:0 8px 26px rgba(0,0,0,.28);transition:width .6s cubic-bezier(.2,.8,.2,1),height .6s cubic-bezier(.2,.8,.2,1)}
+    .vname{font-weight:800;font-size:1.15rem}
+    .vcount{font-weight:900;font-size:1.35rem;color:var(--astra-dark);font-variant-numeric:tabular-nums}
+    @media(max-width:560px){ .vtitle{font-size:1.3rem} .vq{min-height:190px} .vname{font-size:1rem} }
+
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
@@ -263,10 +283,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=13"></script>
+  <script src="config.js?v=14"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
   <script>App.boot();</script>
 </body>
 </html>

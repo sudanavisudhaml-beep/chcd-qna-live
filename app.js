@@ -109,12 +109,16 @@
         if (d.exists) { if (tries > 5) throw new Error("Gagal membuat kode"); return attempt(tries + 1); }
         var doc = { code: code, hostUser: host.user, hostName: host.name, eventName: eventName.trim(), materi: (materi || "").trim(), type: (type || "qna"), createdAt: FV().serverTimestamp() };
         if (type === "survey") doc.fields = [];
+        if (type === "vote") { doc.options = []; doc.voteCounts = {}; }
         return ref.set(doc).then(function () { return code; });
       });
     }
     return attempt(0);
   }
   function saveFieldsDB(code, fields) { return db.collection("events").doc(code).update({ fields: fields }); }
+  function saveOptionsDB(code, options) { return db.collection("events").doc(code).update({ options: options }); }
+  function voteFor(code, oid) { var u = {}; u["voteCounts." + oid] = FV().increment(1); return db.collection("events").doc(code).update(u); }
+  function subscribeEvent(code, cb) { return db.collection("events").doc(code).onSnapshot(function (d) { if (d.exists) cb(d.data()); }); }
 
   /* ---------- DB: responses (subkoleksi survei per event) ---------- */
   function rcol(code) { return db.collection("events").doc(code).collection("responses"); }
@@ -253,7 +257,7 @@
       '<div class="card" style="margin-bottom:18px">' +
         '<h3 class="sec">➕ Buat Sesi Baru</h3>' +
         '<label class="fld">Jenis Sesi</label>' +
-        '<div class="seg" id="typeSeg"><button class="active" onclick="QUERY.pickType(\'qna\',this)">💬 Diskusi Q&amp;A</button><button onclick="QUERY.pickType(\'survey\',this)">📋 Kuesioner</button></div>' +
+        '<div class="seg" id="typeSeg"><button class="active" onclick="QUERY.pickType(\'qna\',this)">💬 Q&amp;A</button><button onclick="QUERY.pickType(\'survey\',this)">📋 Kuesioner</button><button onclick="QUERY.pickType(\'vote\',this)">🗳️ Vote</button></div>' +
         '<label class="fld">Nama Event / Forum</label><input type="text" id="evName" maxlength="60" placeholder="mis. Kopdar CHCD" />' +
         '<label class="fld">Nama Materi / Agenda</label><input type="text" id="evMateri" maxlength="100" placeholder="mis. Sosialisasi Juklak Pengadaan Barang dan Jasa" />' +
         '<div class="hintline" id="typeHint">Sesi tanya-jawab live dengan reaksi & balasan.</div>' +
@@ -272,11 +276,16 @@
       el.innerHTML = events.map(function (ev) {
         var link = sessionURL(ev.code);
         var qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
-        var isSurvey = ev.type === "survey";
-        var typeBadge = isSurvey
+        var isSurvey = ev.type === "survey", isVote = ev.type === "vote";
+        var typeBadge = isVote
+          ? '<span class="badge" style="background:#e7f6ec;color:#0f7a37">🗳️ Vote</span>'
+          : isSurvey
           ? '<span class="badge" style="background:#efe7fb;color:#6d34d6">📋 Kuesioner</span>'
           : '<span class="badge" style="background:var(--astra-soft);color:var(--astra-dark)">💬 Diskusi Q&amp;A</span>';
-        var mainBtns = isSurvey
+        var mainBtns = isVote
+          ? '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">📺 Tampilan Live</button>' +
+            '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + ev.code + '\')">⚙️ Edit Opsi (' + ((ev.options || []).length) + ')</button>'
+          : isSurvey
           ? '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">📊 Lihat Hasil</button>' +
             '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + ev.code + '\')">📝 Edit Pertanyaan (' + ((ev.fields || []).length) + ')</button>'
           : '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">Buka Sesi</button>';
@@ -302,7 +311,7 @@
     newType = t;
     var seg = $("typeSeg"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); }
     if (btn) btn.classList.add("active");
-    var hint = $("typeHint"); if (hint) hint.textContent = t === "survey" ? "Kuesioner ala MS Forms — Anda susun pertanyaannya, hasil tampil live & bisa diringkas." : "Sesi tanya-jawab live dengan reaksi & balasan.";
+    var hint = $("typeHint"); if (hint) hint.textContent = t === "survey" ? "Kuesioner ala MS Forms — Anda susun pertanyaannya, hasil tampil live & bisa diringkas." : (t === "vote" ? "Vote live — audience pilih opsi (mis. negara), bendera membesar seiring vote. Cocok untuk layar/proyektor." : "Sesi tanya-jawab live dengan reaksi & balasan.");
   }
   function doCreateEvent() {
     var h = getHost(); if (!h) { go("/"); return; }
@@ -312,7 +321,7 @@
     createEvent(h, name, materi, t).then(function (code) {
       toast("Sesi dibuat — kode " + code);
       $("evName").value = ""; $("evMateri").value = "";
-      if (t === "survey") go("/build/" + code); else loadEvents();
+      if (t === "survey" || t === "vote") go("/build/" + code); else loadEvents();
     }).catch(function (e) { toast(e.message || "Gagal membuat sesi"); });
   }
   function doShare(code) { var b = $("share_" + code); if (b) b.classList.toggle("open"); }
@@ -339,6 +348,7 @@
       sess = { code: code, event: ev, isOwner: isOwner, items: [], sortByTop: true, openReply: {}, openAnswer: {}, host: host,
         reacts: JSON.parse(localStorage.getItem("query_reacts") || "{}"), name: localStorage.getItem("query_name") || (isOwner ? host.name : "") };
       if (ev.type === "survey") { renderSurveySession(); return; }
+      if (ev.type === "vote") { renderVoteSession(); return; }
       buildSessionDOM();
       sess.unsub = subscribeQ(code, function (data) { sess.items = data; renderFeed(); });
     }).catch(function (e) { view().innerHTML = '<div class="page"><div class="card center">Gagal memuat: ' + esc(e.message) + '</div></div>'; });
@@ -520,7 +530,8 @@
     view().innerHTML = '<div class="page"><div class="empty">Memuat…</div></div>';
     getEvent(code).then(function (ev) {
       if (!ev) { view().innerHTML = '<div class="page"><div class="card center">Sesi tidak ditemukan.</div></div>'; return; }
-      if (!host || host.user !== ev.hostUser) { view().innerHTML = '<div class="page"><div class="card center"><h3 class="sec">Khusus host</h3><p class="muted" style="margin:8px 0 14px">Hanya host pemilik yang bisa menyusun pertanyaan.</p><button class="btn" onclick="QUERY.go(\'/\')">Masuk sebagai host</button></div></div>'; return; }
+      if (!host || host.user !== ev.hostUser) { view().innerHTML = '<div class="page"><div class="card center"><h3 class="sec">Khusus host</h3><p class="muted" style="margin:8px 0 14px">Hanya host pemilik yang bisa mengubah sesi ini.</p><button class="btn" onclick="QUERY.go(\'/\')">Masuk sebagai host</button></div></div>'; return; }
+      if (ev.type === "vote") { renderVoteBuilder(ev); return; }
       builder = { code: code, event: ev, fields: (ev.fields || []).slice() };
       view().innerHTML =
         '<div class="page">' +
@@ -828,6 +839,104 @@
     a.href = URL.createObjectURL(blob); a.download = "hasil-kuesioner-" + ev.code + ".csv"; a.click(); URL.revokeObjectURL(a.href);
   }
 
+  /* ============================================================
+     VOTE — pilih opsi (mis. negara), bendera membesar seiring vote
+     ============================================================ */
+  function flagUrl(code) { return "https://flagcdn.com/w320/" + String(code || "").trim().toLowerCase() + ".png"; }
+  var builderVote = null;
+  function renderVoteBuilder(ev) {
+    builderVote = { code: ev.code, options: (ev.options || []).slice() };
+    view().innerHTML =
+      '<div class="page">' +
+      '<button class="back-link" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button>' +
+      '<h3 class="sec">🗳️ Susun Opsi Vote</h3>' +
+      '<p class="muted" style="margin:2px 0 14px">' + esc(ev.eventName) + '</p>' +
+      '<div id="teamList"></div>' +
+      '<div class="card" style="margin-top:14px">' +
+        '<h3 class="sec" style="font-size:.98rem">➕ Tambah Opsi / Tim</h3>' +
+        '<label class="fld">Nama (mis. negara)</label><input type="text" id="tName" maxlength="40" placeholder="mis. Argentina" />' +
+        '<label class="fld">Kode bendera (ISO)</label><input type="text" id="tCode" maxlength="6" placeholder="ar · fr · es · gb-eng" oninput="QUERY.flagPrev()" />' +
+        '<div class="hintline">Kode negara 2 huruf (ar, fr, es, br, id...). Inggris=gb-eng, Skotlandia=gb-sct, Wales=gb-wls.</div>' +
+        '<div id="flagPrev" style="margin-top:10px"></div>' +
+        '<button class="btn block" style="margin-top:12px" onclick="QUERY.addTeam()">+ Tambah</button>' +
+      '</div>' +
+      '<div class="ev-actions" style="margin-top:16px">' +
+        '<button class="btn" onclick="QUERY.go(\'/e/' + ev.code + '\')">📺 Tampilan Live</button>' +
+        '<button class="btn ghost" onclick="QUERY.share(\'' + ev.code + '\')">QR & Link (untuk pemilih)</button>' +
+      '</div>' + shareBoxHTML(ev.code) + '<div style="height:24px"></div></div>';
+    renderTeamList();
+  }
+  function renderTeamList() {
+    var el = $("teamList"); if (!el) return;
+    if (!builderVote.options.length) { el.innerHTML = '<div class="empty" style="padding:22px">Belum ada opsi. Tambah tim di bawah 👇</div>'; return; }
+    el.innerHTML = builderVote.options.map(function (o) {
+      return '<div class="ev-card"><div style="display:flex;gap:12px;align-items:center">' +
+        '<img class="flag-sm" src="' + flagUrl(o.code) + '" alt="" onerror="this.style.visibility=\'hidden\'" />' +
+        '<div style="flex:1"><div class="en" style="font-size:1rem">' + esc(o.name) + '</div><div class="muted" style="font-size:.8rem">' + esc(o.code) + '</div></div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px">' +
+          '<button class="btn ghost small" onclick="QUERY.moveTeam(\'' + o.oid + '\',-1)">↑</button>' +
+          '<button class="btn ghost small" onclick="QUERY.moveTeam(\'' + o.oid + '\',1)">↓</button>' +
+          '<button class="btn ghost small danger" onclick="QUERY.delTeam(\'' + o.oid + '\')">✕</button>' +
+        '</div></div></div>';
+    }).join("");
+  }
+  function flagPrev() { var c = ($("tCode").value || "").trim(); var el = $("flagPrev"); if (!el) return; el.innerHTML = c ? '<img class="flag-sm" src="' + flagUrl(c) + '" onerror="this.style.display=\'none\'" />' : ''; }
+  function persistVote(cb) { saveOptionsDB(builderVote.code, builderVote.options).then(function () { if (cb) cb(); }).catch(function () { toast("Gagal menyimpan"); }); }
+  function addTeam() {
+    var name = ($("tName").value || "").trim(), code = ($("tCode").value || "").trim().toLowerCase();
+    if (!name) { toast("Isi nama"); return; } if (!code) { toast("Isi kode bendera"); return; }
+    builderVote.options.push({ oid: uid().slice(0, 6), name: name, code: code });
+    persistVote(function () { $("tName").value = ""; $("tCode").value = ""; flagPrev(); renderTeamList(); toast("Ditambah ✓"); });
+  }
+  function delTeam(oid) { builderVote.options = builderVote.options.filter(function (o) { return o.oid !== oid; }); persistVote(renderTeamList); }
+  function moveTeam(oid, dir) {
+    var i = -1; for (var k = 0; k < builderVote.options.length; k++) if (builderVote.options[k].oid === oid) i = k;
+    if (i < 0) return; var j = i + dir; if (j < 0 || j >= builderVote.options.length) return;
+    var t = builderVote.options[i]; builderVote.options[i] = builderVote.options[j]; builderVote.options[j] = t; persistVote(renderTeamList);
+  }
+
+  function renderVoteSession() {
+    var voted = localStorage.getItem("query_vote_" + sess.code);
+    if (sess.isOwner || voted) { buildVoteLiveShell(voted); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); }); }
+    else renderVoteForm();
+  }
+  function renderVoteForm() {
+    var ev = sess.event, opts = ev.options || [];
+    if (!opts.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote") + '<div class="card center">Belum ada opsi untuk dipilih.</div></div>'; return; }
+    view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote — Pilih Tim Anda") +
+      '<div class="vote-grid">' + opts.map(function (o) { return '<button class="vote-card" onclick="QUERY.vote(\'' + o.oid + '\')"><img class="flag-md" src="' + flagUrl(o.code) + '" onerror="this.style.display=\'none\'" /><div class="vc-name">' + esc(o.name) + '</div></button>'; }).join("") + '</div>' +
+      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Pilih satu tim yang Anda dukung 🎉 (satu suara per perangkat)</p></div>';
+  }
+  function doVote(oid) {
+    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
+  }
+  function buildVoteLiveShell(votedOid) {
+    var ev = sess.event, opts = ev.options || [];
+    var mine = votedOid ? opts.filter(function (o) { return o.oid === votedOid; })[0] : null;
+    var livePill = '<span class="live-pill" style="background:#e7f6ec;color:#0f7a37;border-color:#b7e4c7"><span class="dot"></span> Live Vote</span>';
+    var mineBanner = mine ? '<div class="banner" style="background:#e7f6ec;border-color:#b7e4c7;color:#0f7a37;text-align:center">✅ Anda memilih <b>' + esc(mine.name) + '</b> — hasil live di bawah</div>' : '';
+    var cells = opts.map(function (o) {
+      return '<div class="vq" id="vq_' + o.oid + '"><div class="vflag" id="vf_' + o.oid + '" style="background-image:url(' + flagUrl(o.code) + ')"></div><div class="vname">' + esc(o.name) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
+    }).join("");
+    view().innerHTML = '<div class="wrap wrap-wide">' +
+      '<div class="vlive-head">' + (sess.isOwner ? livePill : mineBanner) + '<h2 class="vtitle">' + esc(ev.eventName) + '</h2><div class="vtotal" id="vtotal">0 vote</div></div>' +
+      '<div class="vlive vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
+      (sess.isOwner ? '<div class="center" style="margin-top:18px"><button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR & Link</button> <button class="btn ghost small" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button></div>' + shareBoxHTML(sess.code) : '') +
+      '</div>';
+    updateVoteLive(ev.voteCounts || {});
+  }
+  function updateVoteLive(counts) {
+    var opts = (sess.event && sess.event.options) || [], max = 0, total = 0;
+    opts.forEach(function (o) { var c = counts[o.oid] || 0; if (c > max) max = c; total += c; });
+    var MIN = 28, MAX = 200;
+    opts.forEach(function (o) {
+      var c = counts[o.oid] || 0, size = max ? (MIN + (c / max) * (MAX - MIN)) : MIN;
+      var fe = $("vf_" + o.oid); if (fe) { fe.style.width = size + "px"; fe.style.height = size + "px"; }
+      var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + (total ? " · " + Math.round(c / total * 100) + "%" : "");
+    });
+    var vt = $("vtotal"); if (vt) vt.textContent = total + " vote";
+  }
+
   /* ---------- API global untuk markup onclick ---------- */
   window.QUERY = {
     go: go, seg: seg, logout: function () { clearHost(); setNav(); toast("Keluar"); go("/"); },
@@ -836,7 +945,8 @@
     react: react, toggleReply: toggleReply, sendReply: sendReply, openAnswer: openAnswer, saveAnswer: saveAnswer, unanswer: unanswer, delQ: delQ,
     fmt: fmt, fmtKey: fmtKey,
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
-    pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain
+    pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
+    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote
   };
 
   function boot() { window.addEventListener("hashchange", route); route(); }
