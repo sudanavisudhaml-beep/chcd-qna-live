@@ -265,9 +265,9 @@
     .vqflag{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
     /* Bendera pixel: kotak, kosong→terisi pixel demi pixel */
     .pxflag{position:relative;border-radius:8px;overflow:hidden;background:#cfd9e8;box-shadow:0 6px 22px rgba(0,0,0,.14)}
-    .pxgrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(15,1fr);gap:1px}
-    .px{position:relative;background:#eef4fb;overflow:hidden}
-    .pxfill{position:absolute;inset:0;background-size:1500% 1000%;background-repeat:no-repeat;opacity:0;transform:scale(.55);transition:opacity .4s ease,transform .4s cubic-bezier(.2,1.5,.4,1)}
+    .pxgrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);gap:0}
+    .px{position:relative;background:#e9eef6;overflow:hidden}
+    .pxfill{position:absolute;inset:0;background-size:1000% 1000%;background-repeat:no-repeat;opacity:0;transform:scale(.55);transition:opacity .4s ease,transform .4s cubic-bezier(.2,1.5,.4,1)}
     .px.on .pxfill{opacity:1;transform:scale(1)}
 
     /* ===== Tema lapangan bola (World Cup Special Edition) ===== */
@@ -352,9 +352,14 @@
     @media(max-width:820px){ .pm-name{font-size:1.15rem} .pm-num{font-size:1.7rem} }
     @media(max-width:680px){
       .vs-pm{overflow-y:auto;padding:8px 9px 12px}
-      .vs-pm .vs-top{flex-wrap:wrap;row-gap:6px;padding:7px 10px}
-      .vs-pm .vs-mid{order:3;flex-basis:100%}
-      .vs-pm .vs-title{font-size:.95rem} .vs-pm .vs-logo{height:26px} .vs-pm .vs-logobox{padding:6px 9px}
+      /* Top bar mobile: kontrol (🔔 ✕) di pojok kanan atas, jumlah vote di bawahnya; logo QUERY di tengah, judul di bawah logo */
+      .vs-pm .vs-top{position:relative;flex-direction:column;align-items:center;gap:6px;padding:10px 10px 9px}
+      .vs-pm .vs-right{position:absolute;top:8px;right:9px;flex-direction:column-reverse;align-items:flex-end;gap:5px;margin:0}
+      .vs-pm .vs-ctrls{gap:5px}
+      .vs-pm .vs-total{font-size:.66rem} .vs-pm .vs-total span{font-size:1rem}
+      .vs-pm .vs-logobox{order:1;margin-top:2px}
+      .vs-pm .vs-mid{order:2;flex-basis:auto;text-align:center;gap:5px}
+      .vs-pm .vs-title{font-size:1rem;white-space:normal} .vs-pm .vs-logo{height:30px} .vs-pm .vs-logobox{padding:7px 11px}
       .vs-pm .vs-wc{font-size:.54rem;padding:3px 8px}
       .vs-pm .vs-body{flex-direction:column;gap:10px}
       .vs-pm .pm-list{flex:0 0 auto;gap:9px}
@@ -363,12 +368,12 @@
       .vs-pm .pm-flag{flex-basis:70px}
       .vs-pm .pm-name{font-size:1rem} .vs-pm .pm-bar{height:15px} .vs-pm .pm-num{font-size:1.3rem}
       .vs-pm .pm-pct{min-width:68px} .vs-pm .pm-votes{font-size:.66rem} .vs-pm .pm-trend{font-size:.9rem}
-      .vs-pm .vs-side{flex:0 0 auto;display:flex;flex-direction:row;gap:9px;align-items:stretch}
-      .vs-pm .vs-slot{flex:1;min-width:0}
+      .vs-pm .vs-side{flex:0 0 auto;display:flex;justify-content:center;align-items:stretch}
+      .vs-pm .vs-slot{flex:0 0 auto;max-width:230px}
       .vs-pm .vqr{flex-direction:column;gap:0} .vs-pm .vqr-arrow{display:none}
       .vs-pm .vqr-card{padding:8px 9px} .vs-pm .vqr-title{font-size:.72rem;margin-bottom:4px}
-      .vs-pm .vqr-img{width:108px;height:108px} .vs-pm .vqr-sub{font-size:.6rem}
-      .vs-pm .wc-img{max-height:96px} .vs-pm .wc-date{font-size:.62rem;padding:4px 10px}
+      .vs-pm .vqr-img{width:118px;height:118px} .vs-pm .vqr-sub{font-size:.6rem}
+      .vs-pm .vs-foot .wc-img{max-height:min(12vh,104px);max-width:72vw} .vs-pm .wc-date{font-size:.62rem;padding:4px 10px}
       .vs-pm .vs-copy{font-size:.54rem}
     }
 
@@ -389,11 +394,11 @@
     .wc-img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 8px 22px rgba(0,0,0,.3))}
     .wc-date{flex:0 0 auto;font-size:.72rem;font-weight:800;padding:5px 13px;border-radius:999px;background:rgba(255,209,102,.16);border:1px solid rgba(255,209,102,.45);color:#f5a623;white-space:nowrap}
     .vs-pm .wc-date{color:#ffd166}
-    /* Logo WC dibungkus kartu glass (logo resmi berlatar terang → dibuat terbaca & lembut, bukan kotak putih) */
-    .vs-pm .wc-logo{padding:9px 11px;border-radius:16px;overflow:hidden;
-      background:linear-gradient(155deg,rgba(255,255,255,.9),rgba(232,238,246,.8));
-      backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
-      border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 26px rgba(0,0,0,.35)}
+    /* Footer emblem WC: PNG transparan, TANPA kotak, di tengah bawah page, skala mengikuti ruang */
+    .vs-foot{flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:6px 0 2px}
+    .vs-foot .wc-badge{flex-direction:row;flex-wrap:wrap;height:auto;gap:14px}
+    .vs-foot .wc-logo{flex:0 0 auto;width:auto;padding:0;background:none;border:0;box-shadow:none}
+    .vs-foot .wc-img{max-height:min(15vh,150px);max-width:min(62vw,320px);filter:drop-shadow(0 3px 10px rgba(0,0,0,.45)) drop-shadow(0 0 14px rgba(255,255,255,.28))}
     .wc-fb{display:none;flex-direction:column;align-items:center;text-align:center;background:#fff;border:3px solid #ffd166;border-radius:18px;padding:14px 18px;box-shadow:0 16px 44px rgba(0,0,0,.30)}
     .wc-ico{font-size:3rem;line-height:1;filter:drop-shadow(0 4px 8px rgba(245,166,35,.5))}
     .wc-t1{font-weight:900;font-size:1.02rem;letter-spacing:.1em;color:var(--astra-dark);margin-top:8px}
@@ -458,10 +463,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=26"></script>
+  <script src="config.js?v=27"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=26"></script>
+  <script src="app.js?v=27"></script>
   <script>App.boot();</script>
 </body>
 </html>

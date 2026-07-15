@@ -998,8 +998,8 @@
     voteFor(sess.code, oid, dev, round).then(function () { toast("Vote terkirim! 🎉"); renderVoteSession(); })
       .catch(function () { sess._voting = false; try { localStorage.removeItem("query_vote_" + sess.code); } catch (e) {} toast("Gagal vote"); });
   }
-  // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
-  var PXN = 150;
+  // Grid pixel: 100 sel (10×10), urutan reveal acak-deterministik
+  var PXN = 100;
   var PXRANK = (function () {
     var a = []; for (var i = 0; i < PXN; i++) a.push(i);
     var s = 987654321;
@@ -1007,7 +1007,7 @@
     var r = new Array(PXN); for (var m = 0; m < PXN; m++) r[a[m]] = m; return r; // r[cellIndex] = urutan reveal
   })();
   function pxGridHTML(oid, flag) {
-    var cells = "", cols = 15, rows = 10;
+    var cells = "", cols = 10, rows = 10;
     for (var i = 0; i < PXN; i++) { var col = i % cols, row = Math.floor(i / cols); var px = (col / (cols - 1) * 100).toFixed(2), py = (row / (rows - 1) * 100).toFixed(2); cells += '<div class="px"><i class="pxfill" style="background-image:url(' + flag + ');background-position:' + px + '% ' + py + '%"></i></div>'; }
     return '<div class="pxflag" id="pff_' + oid + '"><div class="pxgrid" id="pf_' + oid + '">' + cells + '</div></div>';
   }
@@ -1042,8 +1042,9 @@
         '</div>' +
         '<div class="vs-body">' +
           '<div class="pm-list">' + rows + '</div>' +
-          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot">' + wcBadgeHTML() + '</div></aside>' : '') +
+          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div></aside>' : '') +
         '</div>' +
+        '<div class="vs-foot">' + wcBadgeHTML() + '</div>' +
         '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk</div>' +
         shareBoxHTML(sess.code) +
       '</div>';
