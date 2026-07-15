@@ -944,10 +944,27 @@
     var t = builderVote.options[i]; builderVote.options[i] = builderVote.options[j]; builderVote.options[j] = t; persistVote(renderTeamList);
   }
 
+  // Vote perangkat ini (hangus bila host me-reset babak: ts < voteResetAt)
+  function getMyVote() {
+    var raw = localStorage.getItem("query_vote_" + sess.code);
+    if (!raw) return null;
+    var v; try { v = JSON.parse(raw); } catch (e) { v = null; }
+    if (!v || typeof v !== "object") v = { oid: String(raw), ts: 0 };
+    var resetAt = (sess.event && sess.event.voteResetAt) || 0;
+    if (resetAt && (v.ts || 0) < resetAt) { localStorage.removeItem("query_vote_" + sess.code); return null; }
+    return v;
+  }
   function renderVoteSession() {
-    var voted = localStorage.getItem("query_vote_" + sess.code);
-    if (sess.isOwner || voted) { buildVoteLiveShell(voted); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); handleLastVote(d.lastVote); }); }
+    var my = getMyVote();
+    if (sess.isOwner || my) { buildVoteLiveShell(my ? my.oid : null); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); handleLastVote(d.lastVote); }); }
     else renderVoteForm();
+  }
+  function resetVote() {
+    if (!sess.isOwner) return;
+    if (!confirm("Reset semua vote ke 0 dan mulai babak baru? Semua orang bisa vote lagi.")) return;
+    var u = { lastVote: FV().delete(), voteResetAt: Date.now() };
+    (sess.event.options || []).forEach(function (o) { u["voteCounts." + o.oid] = 0; });
+    db.collection("events").doc(sess.code).update(u).then(function () { toast("Vote di-reset — mulai dari awal ✓"); }).catch(function () { toast("Gagal reset"); });
   }
   function renderVoteForm() {
     var ev = sess.event, opts = ev.options || [];
@@ -957,9 +974,9 @@
       '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 — cukup sekali, langsung tercatat</p></div>';
   }
   function doVote(oid) {
-    if (localStorage.getItem("query_vote_" + sess.code)) { toast("Anda sudah vote 🙌"); renderVoteSession(); return; }
+    if (getMyVote()) { toast("Anda sudah vote 🙌"); renderVoteSession(); return; }
     ensureAudio();
-    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
+    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, JSON.stringify({ oid: oid, ts: Date.now() })); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
   }
   // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
   var PXN = 150;
@@ -984,7 +1001,8 @@
       return '<div class="vq" id="vq_' + o.oid + '"><div class="vname"><span class="vlead" id="vld_' + o.oid + '">🏆</span>' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
     }).join("");
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
-      (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' : '') +
+      (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
+        '<button class="vs-btn" title="Reset vote (babak baru)" onclick="QUERY.resetVote()">🔄</button>' : '') +
       '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
     view().innerHTML =
       '<div class="vote-screen vs-football">' +
@@ -1034,7 +1052,7 @@
     fmt: fmt, fmtKey: fmtKey,
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
-    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote,
+    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote,
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 
