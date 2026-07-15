@@ -1043,7 +1043,7 @@
         '</div>' +
         '<div class="vs-body">' +
           '<div class="pm-list">' + rows + '</div>' +
-          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div></aside>' : '') +
+          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot vs-slot-wc">' + wcBadgeHTML() + '</div></aside>' : '') +
         '</div>' +
         '<div class="vs-foot">' + wcBadgeHTML() + '</div>' +
         '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk</div>' +
