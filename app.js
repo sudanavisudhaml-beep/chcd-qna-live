@@ -493,11 +493,13 @@
     { v: "single", label: "Pilihan ganda (1 jawaban)" },
     { v: "multi", label: "Kotak centang (banyak jawaban)" },
     { v: "rating", label: "Skala / Rating 1–5" },
+    { v: "matrix", label: "Matriks (baris × kolom, rating 1–5)" },
     { v: "short", label: "Teks singkat" },
     { v: "long", label: "Teks panjang" }
   ];
   function ftypeLabel(v) { for (var i = 0; i < FTYPES.length; i++) if (FTYPES[i].v === v) return FTYPES[i].label; return v; }
   function needsOptions(t) { return t === "single" || t === "multi"; }
+  function isEmptyVal(v) { if (v == null || v === "") return true; if (Array.isArray(v)) return !v.length; if (typeof v === "object") return !Object.keys(v).length; return false; }
   function heroHTML(ev, pill) {
     return '<div class="hero">' +
       '<span class="live-pill"><span class="dot"></span> ' + esc(pill || "Kuesioner") + '</span>' +
@@ -532,6 +534,10 @@
           '<select id="nfType" onchange="QUERY.nfType()">' + FTYPES.map(function (t) { return '<option value="' + t.v + '">' + esc(t.label) + '</option>'; }).join("") + '</select>' +
           '<label class="fld">Pertanyaan</label><input type="text" id="nfLabel" maxlength="120" placeholder="Tulis pertanyaan..." />' +
           '<div id="nfOptWrap"><label class="fld">Pilihan jawaban (satu per baris)</label><textarea id="nfOpts" placeholder="Opsi A&#10;Opsi B&#10;Opsi C"></textarea></div>' +
+          '<div id="nfMtxWrap" style="display:none">' +
+            '<label class="fld">Baris / Pernyataan (satu per baris)</label><textarea id="nfRows" placeholder="Pernyataan 1&#10;Pernyataan 2"></textarea>' +
+            '<label class="fld">Kolom (mis. daftar vendor, satu per baris)</label><textarea id="nfCols" placeholder="Vendor A&#10;Vendor B"></textarea>' +
+          '</div>' +
           '<label class="chk"><input type="checkbox" id="nfReq" /> Wajib diisi</label>' +
           '<button class="btn block" style="margin-top:14px" onclick="QUERY.addField()">+ Tambah</button>' +
         '</div>' +
@@ -547,7 +553,9 @@
     var el = $("fieldList"); if (!el) return;
     if (!builder.fields.length) { el.innerHTML = '<div class="empty" style="padding:22px">Belum ada pertanyaan. Tambah di bawah 👇</div>'; return; }
     el.innerHTML = builder.fields.map(function (f, i) {
-      var opts = (f.options && f.options.length) ? '<div class="muted" style="font-size:.82rem;margin-top:5px">Opsi: ' + f.options.map(esc).join(" · ") + '</div>' : '';
+      var opts = (f.type === "matrix")
+        ? '<div class="muted" style="font-size:.82rem;margin-top:5px">' + (f.rows || []).length + ' baris × ' + (f.cols || []).length + ' kolom</div>'
+        : ((f.options && f.options.length) ? '<div class="muted" style="font-size:.82rem;margin-top:5px">Opsi: ' + f.options.map(esc).join(" · ") + '</div>' : '');
       return '<div class="ev-card"><div style="display:flex;gap:10px;align-items:flex-start">' +
         '<div style="flex:1"><div class="en" style="font-size:.98rem">' + (i + 1) + '. ' + esc(f.label) + (f.required ? ' <span style="color:#e0245e">*</span>' : '') + '</div>' +
         '<div class="badge" style="margin-top:6px;background:var(--astra-soft);color:var(--astra-dark)">' + esc(ftypeLabel(f.type)) + '</div>' + opts + '</div>' +
@@ -558,15 +566,20 @@
         '</div></div></div>';
     }).join("");
   }
-  function nfTypeUI() { var t = $("nfType"); if (!t) return; var w = $("nfOptWrap"); if (w) w.style.display = needsOptions(t.value) ? "block" : "none"; }
+  function nfTypeUI() { var t = $("nfType"); if (!t) return; var v = t.value; var w = $("nfOptWrap"); if (w) w.style.display = needsOptions(v) ? "block" : "none"; var m = $("nfMtxWrap"); if (m) m.style.display = (v === "matrix") ? "block" : "none"; }
   function persistBuilder(cb) { saveFieldsDB(builder.code, builder.fields).then(function () { if (cb) cb(); }).catch(function () { toast("Gagal menyimpan"); }); }
   function addField() {
     var type = $("nfType").value, label = ($("nfLabel").value || "").trim();
     if (!label) { toast("Isi pertanyaannya dulu"); return; }
-    var options = [];
-    if (needsOptions(type)) { options = ($("nfOpts").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean); if (options.length < 2) { toast("Beri minimal 2 pilihan jawaban"); return; } }
-    builder.fields.push({ fid: uid().slice(0, 8), type: type, label: label, options: options, required: $("nfReq").checked });
-    persistBuilder(function () { $("nfLabel").value = ""; $("nfOpts").value = ""; $("nfReq").checked = false; renderBuilderList(); toast("Pertanyaan ditambah ✓"); });
+    var field = { fid: uid().slice(0, 8), type: type, label: label, options: [], required: $("nfReq").checked };
+    if (needsOptions(type)) { field.options = ($("nfOpts").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean); if (field.options.length < 2) { toast("Beri minimal 2 pilihan jawaban"); return; } }
+    if (type === "matrix") {
+      field.rows = ($("nfRows").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      field.cols = ($("nfCols").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      if (field.rows.length < 1 || field.cols.length < 1) { toast("Matriks perlu minimal 1 baris & 1 kolom"); return; }
+    }
+    builder.fields.push(field);
+    persistBuilder(function () { $("nfLabel").value = ""; $("nfOpts").value = ""; if ($("nfRows")) $("nfRows").value = ""; if ($("nfCols")) $("nfCols").value = ""; $("nfReq").checked = false; renderBuilderList(); toast("Pertanyaan ditambah ✓"); });
   }
   function delField(fid) { if (!confirm("Hapus pertanyaan ini?")) return; builder.fields = builder.fields.filter(function (f) { return f.fid !== fid; }); persistBuilder(renderBuilderList); }
   function moveField(fid, dir) {
@@ -596,6 +609,16 @@
     if (f.type === "long") return '<textarea id="fi_' + f.fid + '" maxlength="600" placeholder="Jawaban Anda"></textarea>';
     if (f.type === "rating") { var r = ""; for (var n = 1; n <= 5; n++) r += '<button type="button" class="rate" data-v="' + n + '" onclick="QUERY.pickRate(\'' + f.fid + '\',' + n + ')">' + n + '</button>'; return '<div class="rate-row" id="fi_' + f.fid + '">' + r + '</div>'; }
     if (f.type === "single" || f.type === "multi") { var t = f.type === "single" ? "radio" : "checkbox"; return '<div class="opts" id="fi_' + f.fid + '">' + f.options.map(function (o) { return '<label class="opt"><input type="' + t + '" name="fi_' + f.fid + '" value="' + esc(o) + '" /> <span>' + esc(o) + '</span></label>'; }).join("") + '</div>'; }
+    if (f.type === "matrix") {
+      var rows = f.rows || [], cols = f.cols || [];
+      var thead = '<tr><th class="mtx-corner">Pernyataan \\ Kolom</th>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join("") + '</tr>';
+      var body = rows.map(function (rw, ri) {
+        return '<tr><td class="mtx-rowh">' + esc(rw) + '</td>' + cols.map(function (cl, ci) {
+          return '<td><select id="m_' + f.fid + '_' + ri + '_' + ci + '"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></td>';
+        }).join("") + '</tr>';
+      }).join("");
+      return '<div class="mtx-hint">↔ Geser untuk lihat semua kolom · isi 1–5, kosongkan yang tidak dipakai</div><div class="mtx-wrap"><table class="mtx"><thead>' + thead + '</thead><tbody>' + body + '</tbody></table></div>';
+    }
     return "";
   }
   function pickRate(fid, v) { var row = $("fi_" + fid); if (!row) return; row.setAttribute("data-val", v); var bs = row.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("on", parseInt(bs[i].getAttribute("data-v"), 10) <= v); }
@@ -605,6 +628,11 @@
     if (f.type === "rating") { var v = el.getAttribute("data-val"); return v ? parseInt(v, 10) : ""; }
     if (f.type === "single") { var r = el.querySelector("input:checked"); return r ? r.value : ""; }
     if (f.type === "multi") { return [].slice.call(el.querySelectorAll("input:checked")).map(function (c) { return c.value; }); }
+    if (f.type === "matrix") {
+      var rows = f.rows || [], cols = f.cols || [], obj = {};
+      for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var s = $("m_" + f.fid + "_" + ri + "_" + ci); if (s && s.value) { if (!obj[ri]) obj[ri] = {}; obj[ri][ci] = parseInt(s.value, 10); } }
+      return obj;
+    }
     return "";
   }
   function respErr(show) { var n = $("respName"), e = $("nameErr"); if (!n) return; if (show) { n.style.setProperty("border-color", "#e0245e", "important"); n.style.setProperty("box-shadow", "0 0 0 4px rgba(224,36,94,.16)", "important"); if (e) e.style.display = "block"; n.focus(); } else { n.style.removeProperty("border-color"); n.style.removeProperty("box-shadow"); if (e) e.style.display = "none"; } }
@@ -614,7 +642,7 @@
     var answers = {};
     for (var i = 0; i < fields.length; i++) {
       var f = fields[i], val = getFieldValue(f);
-      if (f.required && (val === "" || val == null || (Array.isArray(val) && !val.length))) { toast("Lengkapi: " + f.label); var el = $("fi_" + f.fid); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (f.required && isEmptyVal(val)) { toast("Lengkapi: " + f.label); var el = $("fi_" + f.fid) || $("m_" + f.fid + "_0_0"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
       answers[f.fid] = val;
     }
     $("subBtn").disabled = true;
@@ -665,9 +693,38 @@
     return { count: texts.length, texts: texts };
   }
   function barRow(label, n, pct) { return '<div class="barrow"><span class="blabel">' + esc(label) + '</span><div class="bar"><div class="fill" style="width:' + pct + '%"></div></div><span class="bval">' + n + ' (' + pct + '%)</span></div>'; }
+  function mcell(a, ri, ci) { if (!a) return undefined; var ro = a[ri]; if (!ro) return undefined; var v = ro[ci]; return (typeof v === "number") ? v : undefined; }
+  function aggregateMatrix(f, resp) {
+    var rows = f.rows || [], cols = f.cols || [];
+    var colStat = cols.map(function () { return { sum: 0, n: 0, resp: 0 }; });
+    var cell = rows.map(function () { return cols.map(function () { return { sum: 0, n: 0 }; }); });
+    resp.forEach(function (r) {
+      var a = r.answers ? r.answers[f.fid] : null; if (!a) return;
+      var colHas = cols.map(function () { return false; });
+      for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) {
+        var v = mcell(a, ri, ci); if (v >= 1 && v <= 5) { colStat[ci].sum += v; colStat[ci].n++; cell[ri][ci].sum += v; cell[ri][ci].n++; colHas[ci] = true; }
+      }
+      colHas.forEach(function (h, ci) { if (h) colStat[ci].resp++; });
+    });
+    var colAgg = cols.map(function (name, ci) { var s = colStat[ci]; return { name: name, ci: ci, avg: s.n ? s.sum / s.n : 0, n: s.n, resp: s.resp }; });
+    var ranked = colAgg.slice().sort(function (a, b) { return b.avg - a.avg; });
+    return { rows: rows, cols: cols, colAgg: colAgg, ranked: ranked, cell: cell };
+  }
+  function respVendorAvg(a, ci, rowCount) { if (!a) return ""; var sum = 0, n = 0; for (var ri = 0; ri < rowCount; ri++) { var v = mcell(a, ri, ci); if (typeof v === "number") { sum += v; n++; } } return n ? (sum / n) : ""; }
+  function matrixRespCell(a, f) {
+    if (!a) return "—"; var rows = f.rows || [], cols = f.cols || [], sum = 0, n = 0, vend = {};
+    for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var v = mcell(a, ri, ci); if (typeof v === "number") { sum += v; n++; vend[ci] = 1; } }
+    return n ? (Object.keys(vend).length + " vendor · Ø " + (sum / n).toFixed(1)) : "—";
+  }
   function summaryHTML(fields, resp) {
     if (!fields.length) return "";
     var lines = fields.map(function (f) {
+      if (f.type === "matrix") {
+        var am = aggregateMatrix(f, resp), rated = am.ranked.filter(function (v) { return v.n > 0; });
+        if (!rated.length) return '<li><b>' + esc(f.label) + ':</b> belum ada penilaian</li>';
+        var top = rated[0], low = rated[rated.length - 1];
+        return '<li><b>' + esc(f.label) + ':</b> terbaik “<b>' + esc(top.name) + '</b>” (' + top.avg.toFixed(2) + '/5)' + (rated.length > 1 ? ', terendah “' + esc(low.name) + '” (' + low.avg.toFixed(2) + '/5)' : '') + '</li>';
+      }
       var a = aggregate(f, resp);
       if (f.type === "rating") return '<li><b>' + esc(f.label) + ':</b> rata-rata <b>' + a.avg.toFixed(2) + '/5</b> (' + a.count + ' respons)</li>';
       if (f.type === "single" || f.type === "multi") { if (!a.top) return '<li><b>' + esc(f.label) + ':</b> belum ada jawaban</li>'; return '<li><b>' + esc(f.label) + ':</b> terbanyak “<b>' + esc(a.top.opt) + '</b>” (' + a.top.pct + '%)</li>'; }
@@ -675,9 +732,24 @@
     }).join("");
     return '<div class="card summary"><h3 class="sec">🧭 Ringkasan — Top Management View</h3><ul class="sumlist">' + lines + '</ul></div>';
   }
+  function matrixCardBody(f, resp) {
+    var a = aggregateMatrix(f, resp);
+    var bars = a.ranked.map(function (v) {
+      var pct = Math.round(v.avg / 5 * 100);
+      return '<div class="barrow"><span class="blabel">' + esc(v.name) + '</span><div class="bar"><div class="fill" style="width:' + pct + '%"></div></div><span class="bval">' + (v.n ? v.avg.toFixed(2) : "–") + ' · ' + v.resp + ' resp</span></div>';
+    }).join("");
+    var thead = '<tr><th>Pernyataan</th>' + a.cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join("") + '</tr>';
+    var trs = a.rows.map(function (rw, ri) {
+      return '<tr><td class="mtx-rowh">' + esc(rw) + '</td>' + a.cols.map(function (c, ci) { var cc = a.cell[ri][ci]; return '<td class="mtx-avg">' + (cc.n ? (cc.sum / cc.n).toFixed(2) : "—") + '</td>'; }).join("") + '</tr>';
+    }).join("");
+    return '<div class="rf-sub">🏆 Peringkat vendor (rata-rata 1–5)</div>' + bars +
+      '<div class="rf-sub" style="margin-top:14px">Rata-rata per pernyataan × vendor</div>' +
+      '<div class="mtx-wrap"><table class="mtx mtxres"><thead>' + thead + '</thead><tbody>' + trs + '</tbody></table></div>';
+  }
   function fieldResultCard(f, resp) {
-    var a = aggregate(f, resp), body = "";
     var head = '<div class="rf-q">' + esc(f.label) + '</div><div class="badge" style="background:var(--astra-soft);color:var(--astra-dark);margin-bottom:10px">' + esc(ftypeLabel(f.type)) + '</div>';
+    if (f.type === "matrix") return '<div class="card rf">' + head + matrixCardBody(f, resp) + '</div>';
+    var a = aggregate(f, resp), body = "";
     if (f.type === "rating") {
       body = '<div class="rf-avg">' + a.avg.toFixed(2) + ' <span>/5</span> <span class="muted" style="font-size:.8rem;font-weight:600">(' + a.count + ' respons)</span></div>';
       for (var n = 5; n >= 1; n--) { var p = a.count ? Math.round(a.dist[n - 1] / a.count * 100) : 0; body += barRow(n + " ★", a.dist[n - 1], p); }
@@ -692,7 +764,7 @@
   function tableHTML(fields, resp) {
     var thead = '<tr><th>Responden</th><th>Waktu</th>' + fields.map(function (f) { return '<th>' + esc(f.label) + '</th>'; }).join("") + '</tr>';
     var rows = resp.slice().sort(function (a, b) { return tsOf(b) - tsOf(a); }).map(function (r) {
-      var cells = fields.map(function (f) { return '<td>' + esc(cellVal(r.answers ? r.answers[f.fid] : "")) + '</td>'; }).join("");
+      var cells = fields.map(function (f) { var v = r.answers ? r.answers[f.fid] : ""; return '<td>' + (f.type === "matrix" ? esc(matrixRespCell(v, f)) : esc(cellVal(v))) + '</td>'; }).join("");
       return '<tr><td class="rname">' + esc(r.name || "Anonim") + '</td><td class="rtime">' + ago(tsOf(r)) + '</td>' + cells + '</tr>';
     }).join("");
     return '<div class="card"><h3 class="sec">📋 Tabel Respons</h3><div class="tbl-wrap"><table class="rtbl"><thead>' + thead + '</thead><tbody>' + rows + '</tbody></table></div></div>';
@@ -706,10 +778,16 @@
   }
   function exportSurvey() {
     var ev = sess.event, fields = ev.fields || [], resp = sess.responses || [];
-    var rows = [["Nama", "Waktu"].concat(fields.map(function (f) { return f.label; }))];
+    var header = ["Nama", "Waktu"];
+    fields.forEach(function (f) { if (f.type === "matrix") (f.cols || []).forEach(function (c) { header.push(f.label + " — " + c); }); else header.push(f.label); });
+    var rows = [header];
     resp.slice().sort(function (a, b) { return tsOf(a) - tsOf(b); }).forEach(function (r) {
       var row = [r.name || "Anonim", tsOf(r) ? new Date(tsOf(r)).toLocaleString("id-ID") : ""];
-      fields.forEach(function (f) { var v = r.answers ? r.answers[f.fid] : ""; row.push(Array.isArray(v) ? v.join(" | ") : (v == null ? "" : String(v))); });
+      fields.forEach(function (f) {
+        var v = r.answers ? r.answers[f.fid] : "";
+        if (f.type === "matrix") { var rc = (f.rows || []).length; (f.cols || []).forEach(function (c, ci) { var av = respVendorAvg(v, ci, rc); row.push(av === "" ? "" : Number(av).toFixed(2)); }); }
+        else row.push(Array.isArray(v) ? v.join(" | ") : (v == null ? "" : String(v)));
+      });
       rows.push(row);
     });
     var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");

@@ -213,6 +213,19 @@
     .rtbl .rname{font-weight:700} .rtbl .rtime{color:var(--muted);font-size:.78rem;white-space:nowrap}
     .rtbl tbody tr:nth-child(even){background:#fafcff}
 
+    /* ===== Matriks ===== */
+    .mtx-hint{font-size:.78rem;color:var(--muted);margin-bottom:7px}
+    .mtx-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px}
+    .mtx{border-collapse:collapse;width:100%;font-size:.82rem}
+    .mtx th,.mtx td{border:1px solid var(--line);padding:6px 8px;text-align:center;vertical-align:middle}
+    .mtx thead th{background:var(--astra-soft);color:var(--astra-dark);font-weight:800;white-space:nowrap}
+    .mtx .mtx-rowh,.mtx .mtx-corner{text-align:left;min-width:190px;max-width:280px;white-space:normal;font-weight:600;background:#fafcff;position:sticky;left:0;z-index:1}
+    .mtx .mtx-corner{background:var(--astra-soft);font-weight:800}
+    .mtx select{width:62px;padding:6px 4px;border-radius:8px;border:2px solid var(--line);background:#fff;font-weight:700;text-align:center}
+    .mtx select:focus{outline:none;border-color:var(--astra)}
+    .mtxres td.mtx-avg{font-weight:800;color:var(--astra-dark)}
+    .rf-sub{font-weight:800;font-size:.86rem;color:var(--astra-dark);margin:2px 0 8px}
+
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
@@ -244,10 +257,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=10"></script>
+  <script src="config.js?v=11"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
   <script>App.boot();</script>
 </body>
 </html>
