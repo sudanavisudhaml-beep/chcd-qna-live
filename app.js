@@ -624,8 +624,10 @@
   function showThanks() {
     view().innerHTML = '<div class="wrap">' + heroHTML(sess.event, "Kuesioner") +
       '<div class="card center"><div style="font-size:2.6rem">🙏</div><h3 class="sec" style="margin-top:8px">Terima kasih!</h3>' +
-      '<p class="muted" style="margin:8px 0 0">Jawaban Anda sudah tercatat.</p></div></div>';
+      '<p class="muted" style="margin:8px 0 14px">Jawaban Anda sudah tercatat.</p>' +
+      '<button class="btn" onclick="QUERY.fillAgain()">➕ Isi lagi (mis. untuk vendor lain)</button></div></div>';
   }
+  function fillAgain() { localStorage.removeItem("query_sub_" + sess.code); sess.name = localStorage.getItem("query_name") || ""; renderSurveyForm(); }
 
   function renderSurveyResults() {
     var ev = sess.event;
@@ -723,7 +725,7 @@
     react: react, toggleReply: toggleReply, sendReply: sendReply, openAnswer: openAnswer, saveAnswer: saveAnswer, unanswer: unanswer, delQ: delQ,
     fmt: fmt, fmtKey: fmtKey,
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
-    pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey
+    pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain
   };
 
   function boot() { window.addEventListener("hashchange", route); route(); }
