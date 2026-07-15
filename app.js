@@ -959,6 +959,7 @@
     var dev = getDeviceId();
     if (round && voters[dev] === round) {
       var oid = null; try { var r0 = JSON.parse(localStorage.getItem("query_vote_" + sess.code)); oid = r0 && r0.oid; } catch (e) {}
+      if (!oid) { try { var rc = JSON.parse(getCookie("qv_" + sess.code) || "null"); oid = rc && rc.oid; } catch (e) {} }
       return { oid: oid, round: round };
     }
     var raw = null; try { raw = localStorage.getItem("query_vote_" + sess.code); } catch (e) {} if (!raw) raw = getCookie("qv_" + sess.code);
