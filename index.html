@@ -389,6 +389,11 @@
     .wc-img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 8px 22px rgba(0,0,0,.3))}
     .wc-date{flex:0 0 auto;font-size:.72rem;font-weight:800;padding:5px 13px;border-radius:999px;background:rgba(255,209,102,.16);border:1px solid rgba(255,209,102,.45);color:#f5a623;white-space:nowrap}
     .vs-pm .wc-date{color:#ffd166}
+    /* Logo WC dibungkus kartu glass (logo resmi berlatar terang → dibuat terbaca & lembut, bukan kotak putih) */
+    .vs-pm .wc-logo{padding:9px 11px;border-radius:16px;overflow:hidden;
+      background:linear-gradient(155deg,rgba(255,255,255,.9),rgba(232,238,246,.8));
+      backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
+      border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 26px rgba(0,0,0,.35)}
     .wc-fb{display:none;flex-direction:column;align-items:center;text-align:center;background:#fff;border:3px solid #ffd166;border-radius:18px;padding:14px 18px;box-shadow:0 16px 44px rgba(0,0,0,.30)}
     .wc-ico{font-size:3rem;line-height:1;filter:drop-shadow(0 4px 8px rgba(245,166,35,.5))}
     .wc-t1{font-weight:900;font-size:1.02rem;letter-spacing:.1em;color:var(--astra-dark);margin-top:8px}
@@ -453,10 +458,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=25"></script>
+  <script src="config.js?v=26"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=25"></script>
+  <script src="app.js?v=26"></script>
   <script>App.boot();</script>
 </body>
 </html>

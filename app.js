@@ -14,6 +14,14 @@
   if (configured && fb) { fb.initializeApp(CFG.firebaseConfig); db = fb.firestore(); }
   function FV() { return fb.firestore.FieldValue; }
   function uid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "r" + Date.now() + Math.floor(Math.random() * 1e6); }
+  function getCookie(n) { try { var m = document.cookie.match(new RegExp("(?:^|; )" + n + "=([^;]*)")); return m ? decodeURIComponent(m[1]) : null; } catch (e) { return null; } }
+  function setCookie(n, v) { try { document.cookie = n + "=" + encodeURIComponent(v) + ";path=/;max-age=31536000;samesite=lax"; } catch (e) {} }
+  function getDeviceId() {
+    var id = getCookie("qdev"); if (!id) { try { id = localStorage.getItem("qdev"); } catch (e) {} }
+    if (!id) id = (uid() + "").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+    setCookie("qdev", id); try { localStorage.setItem("qdev", id); } catch (e) {}
+    return id;
+  }
 
   /* ---------- Util ---------- */
   var $ = function (id) { return document.getElementById(id); };
@@ -117,7 +125,7 @@
   }
   function saveFieldsDB(code, fields) { return db.collection("events").doc(code).update({ fields: fields }); }
   function saveOptionsDB(code, options) { return db.collection("events").doc(code).update({ options: options }); }
-  function voteFor(code, oid) { var u = {}; u["voteCounts." + oid] = FV().increment(1); u.lastVote = { oid: oid, ts: Date.now() }; return db.collection("events").doc(code).update(u); }
+  function voteFor(code, oid, dev, round) { var u = {}; u["voteCounts." + oid] = FV().increment(1); u.lastVote = { oid: oid, ts: Date.now() }; if (dev) u["voters." + dev] = round; return db.collection("events").doc(code).update(u); }
   function subscribeEvent(code, cb) { return db.collection("events").doc(code).onSnapshot(function (d) { if (d.exists) cb(d.data()); }); }
 
   /* ---------- DB: responses (subkoleksi survei per event) ---------- */
@@ -943,15 +951,24 @@
     var t = builderVote.options[i]; builderVote.options[i] = builderVote.options[j]; builderVote.options[j] = t; persistVote(renderTeamList);
   }
 
-  // Vote perangkat ini (hangus bila host me-reset babak: round berubah)
+  // Vote perangkat ini — dicek dari server (voters map, keyed device-id cookie) + fallback lokal.
+  // Hangus saat host reset (voteRound berubah).
   function getMyVote() {
-    var raw = localStorage.getItem("query_vote_" + sess.code);
-    if (!raw) return null;
-    var v; try { v = JSON.parse(raw); } catch (e) { v = null; }
-    if (!v || typeof v !== "object") return null;
     var round = (sess.event && sess.event.voteRound) || "";
-    if (round && v.round !== round) { localStorage.removeItem("query_vote_" + sess.code); return null; }
-    return v;
+    var voters = (sess.event && sess.event.voters) || {};
+    var dev = getDeviceId();
+    if (round && voters[dev] === round) {
+      var oid = null; try { var r0 = JSON.parse(localStorage.getItem("query_vote_" + sess.code)); oid = r0 && r0.oid; } catch (e) {}
+      return { oid: oid, round: round };
+    }
+    var raw = null; try { raw = localStorage.getItem("query_vote_" + sess.code); } catch (e) {} if (!raw) raw = getCookie("qv_" + sess.code);
+    if (raw) { var v; try { v = JSON.parse(raw); } catch (e) { v = null; }
+      if (v && typeof v === "object") {
+        if (round && v.round !== round) { try { localStorage.removeItem("query_vote_" + sess.code); } catch (e) {} return null; }
+        return v;
+      }
+    }
+    return null;
   }
   function renderVoteSession() {
     var my = getMyVote();
@@ -961,7 +978,7 @@
   function resetVote() {
     if (!sess.isOwner) return;
     if (!confirm("Reset semua vote ke 0 dan mulai babak baru? Semua orang bisa vote lagi.")) return;
-    var u = { lastVote: FV().delete(), voteRound: uid().slice(0, 10) };
+    var u = { lastVote: FV().delete(), voteRound: uid().slice(0, 10), voters: {} };
     (sess.event.options || []).forEach(function (o) { u["voteCounts." + o.oid] = 0; });
     db.collection("events").doc(sess.code).update(u).then(function () { toast("Vote di-reset — mulai dari awal ✓"); }).catch(function () { toast("Gagal reset"); });
   }
@@ -973,9 +990,13 @@
       '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 — cukup sekali, langsung tercatat</p></div>';
   }
   function doVote(oid) {
-    if (getMyVote()) { toast("Anda sudah vote 🙌 (1 HP 1 suara)"); renderVoteSession(); return; }
-    ensureAudio();
-    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, JSON.stringify({ oid: oid, round: (sess.event && sess.event.voteRound) || "" })); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
+    if (sess._voting || getMyVote()) { toast("Anda sudah vote 🙌 (1 HP 1 suara)"); renderVoteSession(); return; }
+    sess._voting = true; ensureAudio();
+    var dev = getDeviceId(), round = (sess.event && sess.event.voteRound) || "";
+    var rec = JSON.stringify({ oid: oid, round: round });
+    try { localStorage.setItem("query_vote_" + sess.code, rec); } catch (e) {} setCookie("qv_" + sess.code, rec);
+    voteFor(sess.code, oid, dev, round).then(function () { toast("Vote terkirim! 🎉"); renderVoteSession(); })
+      .catch(function () { sess._voting = false; try { localStorage.removeItem("query_vote_" + sess.code); } catch (e) {} toast("Gagal vote"); });
   }
   // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
   var PXN = 150;
