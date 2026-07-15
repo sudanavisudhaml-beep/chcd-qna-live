@@ -117,7 +117,7 @@
   }
   function saveFieldsDB(code, fields) { return db.collection("events").doc(code).update({ fields: fields }); }
   function saveOptionsDB(code, options) { return db.collection("events").doc(code).update({ options: options }); }
-  function voteFor(code, oid) { var u = {}; u["voteCounts." + oid] = FV().increment(1); return db.collection("events").doc(code).update(u); }
+  function voteFor(code, oid, name) { var u = {}; u["voteCounts." + oid] = FV().increment(1); u.lastVote = { name: (name || "Seseorang"), oid: oid, ts: Date.now() }; return db.collection("events").doc(code).update(u); }
   function subscribeEvent(code, cb) { return db.collection("events").doc(code).onSnapshot(function (d) { if (d.exists) cb(d.data()); }); }
 
   /* ---------- DB: responses (subkoleksi survei per event) ---------- */
@@ -843,6 +843,33 @@
      VOTE — pilih opsi (mis. negara), bendera membesar seiring vote
      ============================================================ */
   function flagUrl(code) { return "https://flagcdn.com/w320/" + String(code || "").trim().toLowerCase() + ".png"; }
+
+  /* ----- Efek: suara "ting", confetti, popup notif ----- */
+  var audioCtx = null;
+  function ensureAudio() { try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx && audioCtx.state === "suspended") audioCtx.resume(); } catch (e) {} }
+  function playTing() {
+    ensureAudio(); if (!audioCtx) return; var t = audioCtx.currentTime;
+    function bell(freq, dur, vol) { var o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = "sine"; o.frequency.setValueAtTime(freq, t); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + dur + 0.02); }
+    bell(1568, 0.5, 0.32); bell(2350, 0.35, 0.12); bell(3136, 0.28, 0.06);
+  }
+  var CONF_COLORS = ["#ff5a5c", "#2f8ad6", "#16a34a", "#f5a623", "#8b5cf6", "#e0245e", "#005BAA", "#ffd166"];
+  function confettiBurst() {
+    var wrap = document.createElement("div"); wrap.className = "confetti";
+    for (var i = 0; i < 60; i++) { var d = document.createElement("i"); d.style.left = (Math.random() * 100) + "%"; d.style.background = CONF_COLORS[i % CONF_COLORS.length]; d.style.animationDelay = (Math.random() * 0.25).toFixed(2) + "s"; d.style.setProperty("--x", (Math.random() * 240 - 120).toFixed(0) + "px"); d.style.setProperty("--r", (Math.random() * 720 - 360).toFixed(0) + "deg"); wrap.appendChild(d); }
+    document.body.appendChild(wrap); setTimeout(function () { wrap.remove(); }, 2600);
+  }
+  function votePopup(name, team) {
+    var p = document.createElement("div"); p.className = "vpop"; p.innerHTML = '<span class="vpop-em">🎉</span><b>' + esc(name) + '</b> vote untuk <b>' + esc(team) + '</b>!';
+    document.body.appendChild(p); requestAnimationFrame(function () { p.classList.add("show"); });
+    setTimeout(function () { p.classList.remove("show"); setTimeout(function () { p.remove(); }, 400); }, 2600);
+  }
+  function teamName(oid) { var opts = (sess.event && sess.event.options) || []; for (var i = 0; i < opts.length; i++) if (opts[i].oid === oid) return opts[i].name; return "Tim"; }
+  function handleLastVote(lv) {
+    if (!lv || !lv.ts || lv.ts === sess.lastVoteSeen) return;
+    sess.lastVoteSeen = lv.ts;
+    playTing(); confettiBurst(); votePopup(lv.name || "Seseorang", teamName(lv.oid));
+  }
+
   var builderVote = null;
   function renderVoteBuilder(ev) {
     builderVote = { code: ev.code, options: (ev.options || []).slice() };
@@ -897,18 +924,24 @@
 
   function renderVoteSession() {
     var voted = localStorage.getItem("query_vote_" + sess.code);
-    if (sess.isOwner || voted) { buildVoteLiveShell(voted); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); }); }
+    if (sess.isOwner || voted) { buildVoteLiveShell(voted); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); handleLastVote(d.lastVote); }); }
     else renderVoteForm();
   }
   function renderVoteForm() {
     var ev = sess.event, opts = ev.options || [];
     if (!opts.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote") + '<div class="card center">Belum ada opsi untuk dipilih.</div></div>'; return; }
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote — Pilih Tim Anda") +
+      '<div class="card"><label class="fld">Nama / inisial Anda (tampil di layar)</label><input type="text" id="vName" maxlength="24" placeholder="mis. SVI" /></div>' +
       '<div class="vote-grid">' + opts.map(function (o) { return '<button class="vote-card" onclick="QUERY.vote(\'' + o.oid + '\')"><img class="flag-md" src="' + flagUrl(o.code) + '" onerror="this.style.display=\'none\'" /><div class="vc-name">' + esc(o.name) + '</div></button>'; }).join("") + '</div>' +
-      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Pilih satu tim yang Anda dukung 🎉 (satu suara per perangkat)</p></div>';
+      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 (satu suara per perangkat)</p></div>';
+    var vn = $("vName"); if (vn) vn.value = localStorage.getItem("query_name") || "";
   }
   function doVote(oid) {
-    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
+    ensureAudio();
+    var raw = (($("vName") ? $("vName").value : "") || localStorage.getItem("query_name") || "").trim();
+    if (raw) localStorage.setItem("query_name", raw);
+    var name = raw || "Seseorang";
+    voteFor(sess.code, oid, name).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
   }
   // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
   var PXN = 150;
@@ -919,25 +952,42 @@
     var r = new Array(PXN); for (var m = 0; m < PXN; m++) r[a[m]] = m; return r; // r[cellIndex] = urutan reveal
   })();
   function pxGridHTML(oid, flag) {
-    var cells = ""; for (var i = 0; i < PXN; i++) cells += '<div class="px"></div>';
-    return '<div class="pxflag"><img src="' + flag + '" alt="" onerror="this.style.display=\'none\'" /><div class="pxgrid" id="pf_' + oid + '">' + cells + '</div></div>';
+    var cells = "", cols = 15, rows = 10;
+    for (var i = 0; i < PXN; i++) { var col = i % cols, row = Math.floor(i / cols); var px = (col / (cols - 1) * 100).toFixed(2), py = (row / (rows - 1) * 100).toFixed(2); cells += '<div class="px"><i class="pxfill" style="background-image:url(' + flag + ');background-position:' + px + '% ' + py + '%"></i></div>'; }
+    return '<div class="pxflag" id="pff_' + oid + '"><div class="pxgrid" id="pf_' + oid + '">' + cells + '</div></div>';
   }
   function buildVoteLiveShell(votedOid) {
     var ev = sess.event, opts = ev.options || [];
     var mine = votedOid ? opts.filter(function (o) { return o.oid === votedOid; })[0] : null;
-    var livePill = '<span class="live-pill" style="background:#e7f6ec;color:#0f7a37;border-color:#b7e4c7"><span class="dot"></span> Live Vote</span>';
-    var mineBanner = mine ? '<div class="banner" style="background:#e7f6ec;border-color:#b7e4c7;color:#0f7a37;text-align:center">✅ Anda memilih <b>' + esc(mine.name) + '</b> — hasil live di bawah</div>' : '';
+    var pill = sess.isOwner
+      ? '<span class="live-pill vs-pill"><span class="dot"></span> Live Vote</span>'
+      : (mine ? '<span class="live-pill vs-pill">✅ Pilihan Anda: ' + esc(mine.name) + '</span>' : '');
     var cells = opts.map(function (o) {
-      return '<div class="vq"><div class="vname">' + esc(o.name) + '</div>' + pxGridHTML(o.oid, flagUrl(o.code)) + '<div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
+      return '<div class="vq"><div class="vname">' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
     }).join("");
-    view().innerHTML = '<div class="wrap wrap-wide">' +
-      '<div class="vlive-head">' + (sess.isOwner ? livePill : mineBanner) + '<h2 class="vtitle">' + esc(ev.eventName) + '</h2><div class="vtotal" id="vtotal">0 vote</div></div>' +
-      '<div class="vlive vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
-      (sess.isOwner ? '<div class="center" style="margin-top:18px"><button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR & Link</button> <button class="btn ghost small" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button></div>' + shareBoxHTML(sess.code) : '') +
+    var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
+      (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' : '') +
+      '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
+    view().innerHTML =
+      '<div class="vote-screen">' +
+        '<div class="vs-top">' +
+          '<img class="vs-logo" src="query-logo.png" alt="QUERY" onerror="this.style.display=\'none\'" />' +
+          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div>' + pill + '</div>' +
+          '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> vote</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
+        '</div>' +
+        '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
+        shareBoxHTML(sess.code) +
       '</div>';
     sess.pxCells = {};
     opts.forEach(function (o) { var g = $("pf_" + o.oid); if (g) sess.pxCells[o.oid] = [].slice.call(g.children); });
+    sess.lastVoteSeen = (ev.lastVote && ev.lastVote.ts) || 0;
+    setTimeout(sizeVoteFlags, 30);
+    if (!window.__vresize) { window.__vresize = true; window.addEventListener("resize", function () { if (document.querySelector(".vote-screen")) sizeVoteFlags(); }); }
     updateVoteLive(ev.voteCounts || {});
+  }
+  function sizeVoteFlags() {
+    var opts = (sess.event && sess.event.options) || [];
+    opts.forEach(function (o) { var pff = $("pff_" + o.oid); if (!pff) return; var wrap = pff.parentNode; var cw = wrap.clientWidth, ch = wrap.clientHeight; if (!cw || !ch) return; var w = Math.min(cw, ch * 1.5), h = w / 1.5; pff.style.width = Math.floor(w) + "px"; pff.style.height = Math.floor(h) + "px"; });
   }
   function updateVoteLive(counts) {
     var opts = (sess.event && sess.event.options) || [], total = 0;
@@ -948,7 +998,7 @@
       if (cells) for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", PXRANK[i] < N);
       var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + (total ? " · " + Math.round(c / total * 100) + "%" : "");
     });
-    var vt = $("vtotal"); if (vt) vt.textContent = total + " vote";
+    var vt = $("vtotal"); if (vt) vt.textContent = total;
   }
 
   /* ---------- API global untuk markup onclick ---------- */
@@ -960,7 +1010,8 @@
     fmt: fmt, fmtKey: fmtKey,
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
-    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote
+    flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote,
+    enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 
   function boot() { window.addEventListener("hashchange", route); route(); }

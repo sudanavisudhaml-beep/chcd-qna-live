@@ -232,30 +232,53 @@
     .vtag{font-size:.6rem;font-weight:800;background:#efe7fb;color:#6d34d6;padding:1px 6px;border-radius:999px;vertical-align:middle;margin-left:4px}
     .oitem{padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
 
-    /* ===== Vote ===== */
-    .wrap-wide{max-width:1080px}
+    /* ===== Vote — form pemilih ===== */
     .vote-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .vote-card{appearance:none;cursor:pointer;background:#fff;border:2px solid var(--line);border-radius:18px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:11px;font:inherit;box-shadow:var(--shadow-sm);transition:transform .1s,border-color .12s,box-shadow .12s}
     .vote-card:hover{border-color:var(--astra);transform:translateY(-2px);box-shadow:var(--shadow)}
     .vote-card:active{transform:scale(.97)}
-    .flag-md{width:88px;height:59px;object-fit:cover;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+    .flag-md{width:96px;height:64px;object-fit:cover;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
     .vc-name{font-weight:800;font-size:1.05rem;text-align:center}
     .flag-sm{width:42px;height:28px;object-fit:cover;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,.2);flex-shrink:0}
-    .vlive-head{text-align:center;margin:8px 0 18px}
-    .vtitle{font-size:1.6rem;font-weight:900;margin:12px 0 4px;letter-spacing:-.02em}
-    .vtotal{color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
-    .vlive{display:grid;gap:14px}
-    .vlive-1{grid-template-columns:1fr} .vlive-2,.vlive-3,.vlive-4{grid-template-columns:1fr 1fr}
-    .vq{position:relative;background:linear-gradient(160deg,#eef5fd,#dfeafb);border:1px solid var(--line);border-radius:22px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:hidden;padding:20px}
-    .vname{font-weight:800;font-size:1.15rem}
-    .vcount{font-weight:900;font-size:1.35rem;color:var(--astra-dark);font-variant-numeric:tabular-nums}
-    /* Bendera pixel: kotak, mulai kosong, terisi pixel demi pixel */
-    .pxflag{position:relative;width:100%;max-width:300px;aspect-ratio:3/2;border-radius:8px;overflow:hidden;margin:0 auto;background:#c3d1e2;box-shadow:0 6px 22px rgba(0,0,0,.16)}
-    .pxflag>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
+    /* ===== Vote — layar live (fit-to-screen) ===== */
+    .vote-screen{position:fixed;inset:0;z-index:40;background:radial-gradient(1200px 700px at 50% -10%,#dfeafc,#f6f9fc 60%);display:flex;flex-direction:column;padding:10px 16px 16px}
+    .vs-top{display:flex;align-items:center;gap:14px;padding:6px 2px 10px;flex:0 0 auto}
+    .vs-logo{height:34px;width:auto}
+    .vs-mid{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .vs-title{font-weight:900;font-size:1.15rem;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .vs-pill{background:#e7f6ec;color:#0f7a37;border-color:#b7e4c7}
+    .vs-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+    .vs-total{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .vs-total span{color:var(--astra-dark);font-size:1.1rem}
+    .vs-ctrls{display:flex;gap:6px}
+    .vs-btn{width:36px;height:34px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-size:1rem;box-shadow:var(--shadow-sm)}
+    .vs-btn:hover{background:var(--astra-soft2)}
+    .vote-screen .share-box.open{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.32);border-style:solid}
+    .vs-grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px}
+    .vlive-1{grid-template-columns:1fr;grid-template-rows:1fr}
+    .vlive-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+    .vlive-3,.vlive-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+    .vq{min-width:0;min-height:0;background:linear-gradient(160deg,#ffffff,#eef4fb);border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;overflow:hidden}
+    .vname{font-weight:800;font-size:1.15rem;flex:0 0 auto}
+    .vcount{font-weight:900;font-size:1.2rem;color:var(--astra-dark);font-variant-numeric:tabular-nums;flex:0 0 auto}
+    .vqflag{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+    /* Bendera pixel: kotak, kosong→terisi pixel demi pixel */
+    .pxflag{position:relative;border-radius:8px;overflow:hidden;background:#cfd9e8;box-shadow:0 6px 22px rgba(0,0,0,.14)}
     .pxgrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(15,1fr);gap:1px}
-    .px{background:#eef4fb;transition:opacity .5s ease}
-    .px.on{opacity:0}
-    @media(max-width:560px){ .vtitle{font-size:1.3rem} .vq{min-height:170px;padding:14px} .vname{font-size:1rem} .pxflag{max-width:220px} }
+    .px{position:relative;background:#eef4fb;overflow:hidden}
+    .pxfill{position:absolute;inset:0;background-size:1500% 1000%;background-repeat:no-repeat;opacity:0;transform:scale(.55);transition:opacity .4s ease,transform .4s cubic-bezier(.2,1.5,.4,1)}
+    .px.on .pxfill{opacity:1;transform:scale(1)}
+
+    /* Confetti + popup notif */
+    .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+    .confetti i{position:absolute;top:-16px;width:10px;height:14px;border-radius:2px;opacity:.95;animation:confall 2.4s cubic-bezier(.3,.6,.5,1) forwards}
+    @keyframes confall{0%{transform:translateY(-20px) translateX(0) rotate(0)}100%{transform:translateY(103vh) translateX(var(--x,0)) rotate(var(--r,360deg))}}
+    .vpop{position:fixed;top:78px;left:50%;transform:translateX(-50%) translateY(-16px);background:#fff;border:1px solid var(--line);border-left:5px solid var(--ok);border-radius:14px;padding:12px 18px;font-size:1rem;font-weight:600;box-shadow:0 14px 36px rgba(0,0,0,.18);opacity:0;z-index:61;white-space:nowrap;transition:opacity .3s,transform .3s}
+    .vpop.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .vpop .vpop-em{margin-right:6px}
+    .vpop b{color:var(--astra-dark)}
+    @media(max-width:560px){ .vs-title{font-size:1rem} .vname{font-size:.95rem} .vs-logo{height:28px} .vpop{font-size:.9rem;white-space:normal;max-width:90vw;text-align:center} }
 
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
@@ -288,10 +311,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=15"></script>
+  <script src="config.js?v=16"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
   <script>App.boot();</script>
 </body>
 </html>
