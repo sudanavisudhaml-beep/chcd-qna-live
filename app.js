@@ -998,7 +998,8 @@
       ? '<span class="live-pill vs-pill"><span class="dot"></span> Live Vote</span>'
       : (mine ? '<span class="live-pill vs-pill">✅ Pilihan Anda: ' + esc(mine.name) + '</span>' : '');
     var cells = opts.map(function (o) {
-      return '<div class="vq" id="vq_' + o.oid + '"><div class="vname"><span class="vlead" id="vld_' + o.oid + '">🏆</span>' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
+      return '<div class="vq" id="vq_' + o.oid + '"><div class="vname"><span class="vlead" id="vld_' + o.oid + '">🏆</span>' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
+        '<div class="vprog"><div class="vprog-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div><span class="vprog-label" id="vcn_' + o.oid + '">0</span></div></div>';
     }).join("");
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
       (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
@@ -1015,6 +1016,7 @@
           '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
           (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot">' + wcBadgeHTML() + '</div></aside>' : '') +
         '</div>' +
+        '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk</div>' +
         shareBoxHTML(sess.code) +
       '</div>';
     sess.pxCells = {};
@@ -1035,7 +1037,9 @@
       var c = counts[o.oid] || 0, N = Math.min(PXN, c);
       var cells = sess.pxCells && sess.pxCells[o.oid];
       if (cells) for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", PXRANK[i] < N);
-      var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + (total ? " · " + Math.round(c / total * 100) + "%" : "");
+      var pct = total ? Math.round(c / total * 100) : 0;
+      var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + " · " + pct + "%";
+      var pf = $("vpf_" + o.oid); if (pf) pf.style.width = pct + "%";
       var isLead = c > 0 && c === maxC;
       var ld = $("vld_" + o.oid); if (ld) ld.style.display = isLead ? "inline-block" : "none";
       var vq = $("vq_" + o.oid); if (vq) vq.classList.toggle("leader", isLead);
