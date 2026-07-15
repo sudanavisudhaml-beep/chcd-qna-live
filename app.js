@@ -910,28 +910,42 @@
   function doVote(oid) {
     voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
   }
+  // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
+  var PXN = 150;
+  var PXRANK = (function () {
+    var a = []; for (var i = 0; i < PXN; i++) a.push(i);
+    var s = 987654321;
+    for (var k = PXN - 1; k > 0; k--) { s = (s * 1103515245 + 12345) & 0x7fffffff; var j = s % (k + 1); var t = a[k]; a[k] = a[j]; a[j] = t; }
+    var r = new Array(PXN); for (var m = 0; m < PXN; m++) r[a[m]] = m; return r; // r[cellIndex] = urutan reveal
+  })();
+  function pxGridHTML(oid, flag) {
+    var cells = ""; for (var i = 0; i < PXN; i++) cells += '<div class="px"></div>';
+    return '<div class="pxflag"><img src="' + flag + '" alt="" onerror="this.style.display=\'none\'" /><div class="pxgrid" id="pf_' + oid + '">' + cells + '</div></div>';
+  }
   function buildVoteLiveShell(votedOid) {
     var ev = sess.event, opts = ev.options || [];
     var mine = votedOid ? opts.filter(function (o) { return o.oid === votedOid; })[0] : null;
     var livePill = '<span class="live-pill" style="background:#e7f6ec;color:#0f7a37;border-color:#b7e4c7"><span class="dot"></span> Live Vote</span>';
     var mineBanner = mine ? '<div class="banner" style="background:#e7f6ec;border-color:#b7e4c7;color:#0f7a37;text-align:center">✅ Anda memilih <b>' + esc(mine.name) + '</b> — hasil live di bawah</div>' : '';
     var cells = opts.map(function (o) {
-      return '<div class="vq" id="vq_' + o.oid + '"><div class="vflag" id="vf_' + o.oid + '" style="background-image:url(' + flagUrl(o.code) + ')"></div><div class="vname">' + esc(o.name) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
+      return '<div class="vq"><div class="vname">' + esc(o.name) + '</div>' + pxGridHTML(o.oid, flagUrl(o.code)) + '<div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
     }).join("");
     view().innerHTML = '<div class="wrap wrap-wide">' +
       '<div class="vlive-head">' + (sess.isOwner ? livePill : mineBanner) + '<h2 class="vtitle">' + esc(ev.eventName) + '</h2><div class="vtotal" id="vtotal">0 vote</div></div>' +
       '<div class="vlive vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
       (sess.isOwner ? '<div class="center" style="margin-top:18px"><button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR & Link</button> <button class="btn ghost small" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button></div>' + shareBoxHTML(sess.code) : '') +
       '</div>';
+    sess.pxCells = {};
+    opts.forEach(function (o) { var g = $("pf_" + o.oid); if (g) sess.pxCells[o.oid] = [].slice.call(g.children); });
     updateVoteLive(ev.voteCounts || {});
   }
   function updateVoteLive(counts) {
-    var opts = (sess.event && sess.event.options) || [], max = 0, total = 0;
-    opts.forEach(function (o) { var c = counts[o.oid] || 0; if (c > max) max = c; total += c; });
-    var MIN = 28, MAX = 200;
+    var opts = (sess.event && sess.event.options) || [], total = 0;
+    opts.forEach(function (o) { total += counts[o.oid] || 0; });
     opts.forEach(function (o) {
-      var c = counts[o.oid] || 0, size = max ? (MIN + (c / max) * (MAX - MIN)) : MIN;
-      var fe = $("vf_" + o.oid); if (fe) { fe.style.width = size + "px"; fe.style.height = size + "px"; }
+      var c = counts[o.oid] || 0, N = Math.min(PXN, c);
+      var cells = sess.pxCells && sess.pxCells[o.oid];
+      if (cells) for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", PXRANK[i] < N);
       var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + (total ? " · " + Math.round(c / total * 100) + "%" : "");
     });
     var vt = $("vtotal"); if (vt) vt.textContent = total + " vote";
