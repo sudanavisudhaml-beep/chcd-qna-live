@@ -854,6 +854,17 @@
         '<div class="vqr-sub">Arahkan kamera HP<br/>Kode <b>' + esc(ev.code) + '</b></div>' +
       '</div></div>';
   }
+  // Emblem World Cup: pakai worldcup.png bila ada di repo, kalau tidak tampilkan emblem buatan
+  function wcBadgeHTML() {
+    return '<div class="wc-badge">' +
+      '<img class="wc-img" src="worldcup.png" alt="World Cup 2026" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />' +
+      '<div class="wc-fb">' +
+        '<span class="wc-ico">🏆</span>' +
+        '<span class="wc-t1">WORLD CUP</span>' +
+        '<span class="wc-t2">2026</span>' +
+        '<span class="wc-sub">⚽ 11 Juni – 19 Juli 2026</span>' +
+      '</div></div>';
+  }
 
   /* ----- Efek: suara "ting", confetti, popup notif ----- */
   var audioCtx = null;
@@ -984,7 +995,7 @@
         '</div>' +
         '<div class="vs-body">' +
           '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
-          (sess.isOwner ? '<aside class="vs-side">' + voteQrHTML(ev) + '</aside>' : '') +
+          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot">' + wcBadgeHTML() + '</div></aside>' : '') +
         '</div>' +
         shareBoxHTML(sess.code) +
       '</div>';
