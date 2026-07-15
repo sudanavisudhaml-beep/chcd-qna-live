@@ -102,15 +102,28 @@
 
   /* ---------- DB: events ---------- */
   function genCode() { var c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", s = ""; for (var i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
-  function createEvent(host, eventName, materi) {
+  function createEvent(host, eventName, materi, type) {
     function attempt(tries) {
       var code = genCode(), ref = db.collection("events").doc(code);
       return ref.get().then(function (d) {
         if (d.exists) { if (tries > 5) throw new Error("Gagal membuat kode"); return attempt(tries + 1); }
-        return ref.set({ code: code, hostUser: host.user, hostName: host.name, eventName: eventName.trim(), materi: (materi || "").trim(), createdAt: FV().serverTimestamp() }).then(function () { return code; });
+        var doc = { code: code, hostUser: host.user, hostName: host.name, eventName: eventName.trim(), materi: (materi || "").trim(), type: (type || "qna"), createdAt: FV().serverTimestamp() };
+        if (type === "survey") doc.fields = [];
+        return ref.set(doc).then(function () { return code; });
       });
     }
     return attempt(0);
+  }
+  function saveFieldsDB(code, fields) { return db.collection("events").doc(code).update({ fields: fields }); }
+
+  /* ---------- DB: responses (subkoleksi survei per event) ---------- */
+  function rcol(code) { return db.collection("events").doc(code).collection("responses"); }
+  function addResponse(code, name, answers) { return rcol(code).add({ name: (name || "").trim() || "Anonim", answers: answers, createdAt: FV().serverTimestamp() }); }
+  function subscribeResponses(code, cb) {
+    return rcol(code).orderBy("createdAt", "asc").onSnapshot(function (snap) {
+      var arr = []; snap.forEach(function (d) { var x = d.data(); arr.push({ id: d.id, name: x.name, answers: x.answers || {}, createdAt: x.createdAt }); });
+      cb(arr);
+    });
   }
   function listEvents(hostUser) {
     return db.collection("events").where("hostUser", "==", hostUser).get().then(function (snap) {
@@ -154,6 +167,7 @@
     var m;
     if (h === "/" || h === "") return renderLanding();
     if (h === "/dashboard") return renderDashboard();
+    if ((m = h.match(/^\/build\/([A-Za-z0-9]+)$/))) return renderBuilder(m[1].toUpperCase());
     if ((m = h.match(/^\/e\/([A-Za-z0-9]+)$/))) return renderSession(m[1].toUpperCase());
     return renderLanding();
   }
@@ -237,10 +251,13 @@
       '<div class="dash-head"><div class="hi">Dashboard<small>Host: ' + esc(h.name) + ' (@' + esc(h.user) + ')</small></div>' +
       '<button class="btn ghost small" onclick="QUERY.logout()">Keluar</button></div>' +
       '<div class="card" style="margin-bottom:18px">' +
-        '<h3 class="sec">➕ Buat Event Baru</h3>' +
+        '<h3 class="sec">➕ Buat Sesi Baru</h3>' +
+        '<label class="fld">Jenis Sesi</label>' +
+        '<div class="seg" id="typeSeg"><button class="active" onclick="QUERY.pickType(\'qna\',this)">💬 Diskusi Q&amp;A</button><button onclick="QUERY.pickType(\'survey\',this)">📋 Kuesioner</button></div>' +
         '<label class="fld">Nama Event / Forum</label><input type="text" id="evName" maxlength="60" placeholder="mis. Kopdar CHCD" />' +
         '<label class="fld">Nama Materi / Agenda</label><input type="text" id="evMateri" maxlength="100" placeholder="mis. Sosialisasi Juklak Pengadaan Barang dan Jasa" />' +
-        '<button class="btn block" style="margin-top:16px" onclick="QUERY.createEvent()">Buat Event</button>' +
+        '<div class="hintline" id="typeHint">Sesi tanya-jawab live dengan reaksi & balasan.</div>' +
+        '<button class="btn block" style="margin-top:16px" onclick="QUERY.createEvent()">Buat Sesi</button>' +
       '</div>' +
       '<h3 class="sec" style="margin:4px 2px 12px">Event Saya</h3>' +
       '<div id="evList"><div class="empty">Memuat…</div></div>' +
@@ -255,12 +272,21 @@
       el.innerHTML = events.map(function (ev) {
         var link = sessionURL(ev.code);
         var qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
+        var isSurvey = ev.type === "survey";
+        var typeBadge = isSurvey
+          ? '<span class="badge" style="background:#efe7fb;color:#6d34d6">📋 Kuesioner</span>'
+          : '<span class="badge" style="background:var(--astra-soft);color:var(--astra-dark)">💬 Diskusi Q&amp;A</span>';
+        var mainBtns = isSurvey
+          ? '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">📊 Lihat Hasil</button>' +
+            '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + ev.code + '\')">📝 Edit Pertanyaan (' + ((ev.fields || []).length) + ')</button>'
+          : '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">Buka Sesi</button>';
         return '<div class="ev-card">' +
+          '<div style="margin-bottom:6px">' + typeBadge + '</div>' +
           '<div class="en">' + esc(ev.eventName) + '</div>' +
           (ev.materi ? '<div class="em">' + esc(ev.materi) + '</div>' : '') +
           '<div class="ev-code">Kode: ' + esc(ev.code) + '</div>' +
           '<div class="ev-actions">' +
-            '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">Buka Sesi</button>' +
+            mainBtns +
             '<button class="btn ghost small" onclick="QUERY.share(\'' + ev.code + '\')">QR & Link</button>' +
             '<button class="btn ghost small" onclick="QUERY.copy(\'' + esc(link) + '\')">Salin Link</button>' +
             '<button class="btn ghost small danger" onclick="QUERY.delEvent(\'' + ev.code + '\')">Hapus</button>' +
@@ -271,12 +297,23 @@
     }).catch(function (e) { var el = $("evList"); if (el) el.innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>'; });
   }
   function sessionURL(code) { return location.origin + location.pathname + "#/e/" + code; }
+  var newType = "qna";
+  function pickType(t, btn) {
+    newType = t;
+    var seg = $("typeSeg"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); }
+    if (btn) btn.classList.add("active");
+    var hint = $("typeHint"); if (hint) hint.textContent = t === "survey" ? "Kuesioner ala MS Forms — Anda susun pertanyaannya, hasil tampil live & bisa diringkas." : "Sesi tanya-jawab live dengan reaksi & balasan.";
+  }
   function doCreateEvent() {
     var h = getHost(); if (!h) { go("/"); return; }
     var name = ($("evName").value || "").trim(), materi = ($("evMateri").value || "").trim();
-    if (!name) { toast("Isi nama event dulu"); return; }
-    createEvent(h, name, materi).then(function (code) { toast("Event dibuat — kode " + code); loadEvents(); $("evName").value = ""; $("evMateri").value = ""; })
-      .catch(function (e) { toast(e.message || "Gagal membuat event"); });
+    if (!name) { toast("Isi nama sesi dulu"); return; }
+    var t = newType;
+    createEvent(h, name, materi, t).then(function (code) {
+      toast("Sesi dibuat — kode " + code);
+      $("evName").value = ""; $("evMateri").value = "";
+      if (t === "survey") go("/build/" + code); else loadEvents();
+    }).catch(function (e) { toast(e.message || "Gagal membuat sesi"); });
   }
   function doShare(code) { var b = $("share_" + code); if (b) b.classList.toggle("open"); }
   function doCopy(text) {
@@ -301,6 +338,7 @@
       var isOwner = !!(host && host.user === ev.hostUser);
       sess = { code: code, event: ev, isOwner: isOwner, items: [], sortByTop: true, openReply: {}, openAnswer: {}, host: host,
         reacts: JSON.parse(localStorage.getItem("query_reacts") || "{}"), name: localStorage.getItem("query_name") || (isOwner ? host.name : "") };
+      if (ev.type === "survey") { renderSurveySession(); return; }
       buildSessionDOM();
       sess.unsub = subscribeQ(code, function (data) { sess.items = data; renderFeed(); });
     }).catch(function (e) { view().innerHTML = '<div class="page"><div class="card center">Gagal memuat: ' + esc(e.message) + '</div></div>'; });
@@ -448,13 +486,244 @@
     if (focusId) { var fe = $(focusId); if (fe) { fe.focus(); if (caret != null && fe.setSelectionRange) { try { fe.setSelectionRange(caret, caret); } catch (e) {} } } }
   }
 
+  /* ============================================================
+     KUESIONER (survey): builder, form, hasil live
+     ============================================================ */
+  var FTYPES = [
+    { v: "single", label: "Pilihan ganda (1 jawaban)" },
+    { v: "multi", label: "Kotak centang (banyak jawaban)" },
+    { v: "rating", label: "Skala / Rating 1–5" },
+    { v: "short", label: "Teks singkat" },
+    { v: "long", label: "Teks panjang" }
+  ];
+  function ftypeLabel(v) { for (var i = 0; i < FTYPES.length; i++) if (FTYPES[i].v === v) return FTYPES[i].label; return v; }
+  function needsOptions(t) { return t === "single" || t === "multi"; }
+  function heroHTML(ev, pill) {
+    return '<div class="hero">' +
+      '<span class="live-pill"><span class="dot"></span> ' + esc(pill || "Kuesioner") + '</span>' +
+      '<div class="logo-card"><img src="query-logo.png" alt="QUERY" class="query-logo-img" onerror="this.style.display=\'none\'" /></div>' +
+      '<p class="tagline">' + esc(CFG.APP_TAGLINE || "Malu Bertanya, Sesat di Jalan") + '</p>' +
+      '<span class="event">' + esc(ev.eventName) + '</span>' +
+      (ev.materi ? '<span class="materi">' + esc(ev.materi) + '</span>' : '') + '</div>';
+  }
+  function shareBoxHTML(code) {
+    var link = sessionURL(code), qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
+    return '<div class="share-box" id="share_' + code + '"><img alt="QR" src="' + qr + '" /><div class="lnk">' + esc(link) + '</div></div>';
+  }
+
+  /* ----- Builder ----- */
+  var builder = null;
+  function renderBuilder(code) {
+    var host = getHost();
+    view().innerHTML = '<div class="page"><div class="empty">Memuat…</div></div>';
+    getEvent(code).then(function (ev) {
+      if (!ev) { view().innerHTML = '<div class="page"><div class="card center">Sesi tidak ditemukan.</div></div>'; return; }
+      if (!host || host.user !== ev.hostUser) { view().innerHTML = '<div class="page"><div class="card center"><h3 class="sec">Khusus host</h3><p class="muted" style="margin:8px 0 14px">Hanya host pemilik yang bisa menyusun pertanyaan.</p><button class="btn" onclick="QUERY.go(\'/\')">Masuk sebagai host</button></div></div>'; return; }
+      builder = { code: code, event: ev, fields: (ev.fields || []).slice() };
+      view().innerHTML =
+        '<div class="page">' +
+        '<button class="back-link" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button>' +
+        '<h3 class="sec">📝 Susun Pertanyaan</h3>' +
+        '<p class="muted" style="margin:2px 0 14px">' + esc(ev.eventName) + '</p>' +
+        '<div id="fieldList"></div>' +
+        '<div class="card" style="margin-top:14px">' +
+          '<h3 class="sec" style="font-size:.98rem">➕ Tambah Pertanyaan</h3>' +
+          '<label class="fld">Jenis</label>' +
+          '<select id="nfType" onchange="QUERY.nfType()">' + FTYPES.map(function (t) { return '<option value="' + t.v + '">' + esc(t.label) + '</option>'; }).join("") + '</select>' +
+          '<label class="fld">Pertanyaan</label><input type="text" id="nfLabel" maxlength="120" placeholder="Tulis pertanyaan..." />' +
+          '<div id="nfOptWrap"><label class="fld">Pilihan jawaban (satu per baris)</label><textarea id="nfOpts" placeholder="Opsi A&#10;Opsi B&#10;Opsi C"></textarea></div>' +
+          '<label class="chk"><input type="checkbox" id="nfReq" /> Wajib diisi</label>' +
+          '<button class="btn block" style="margin-top:14px" onclick="QUERY.addField()">+ Tambah</button>' +
+        '</div>' +
+        '<div class="ev-actions" style="margin-top:16px">' +
+          '<button class="btn" onclick="QUERY.go(\'/e/' + code + '\')">📊 Lihat Hasil</button>' +
+          '<button class="btn ghost" onclick="QUERY.share(\'' + code + '\')">QR & Link (bagikan ke responden)</button>' +
+        '</div>' + shareBoxHTML(code) +
+        '<div style="height:24px"></div></div>';
+      renderBuilderList(); nfTypeUI();
+    }).catch(function (e) { view().innerHTML = '<div class="page"><div class="card center">Gagal memuat: ' + esc(e.message) + '</div></div>'; });
+  }
+  function renderBuilderList() {
+    var el = $("fieldList"); if (!el) return;
+    if (!builder.fields.length) { el.innerHTML = '<div class="empty" style="padding:22px">Belum ada pertanyaan. Tambah di bawah 👇</div>'; return; }
+    el.innerHTML = builder.fields.map(function (f, i) {
+      var opts = (f.options && f.options.length) ? '<div class="muted" style="font-size:.82rem;margin-top:5px">Opsi: ' + f.options.map(esc).join(" · ") + '</div>' : '';
+      return '<div class="ev-card"><div style="display:flex;gap:10px;align-items:flex-start">' +
+        '<div style="flex:1"><div class="en" style="font-size:.98rem">' + (i + 1) + '. ' + esc(f.label) + (f.required ? ' <span style="color:#e0245e">*</span>' : '') + '</div>' +
+        '<div class="badge" style="margin-top:6px;background:var(--astra-soft);color:var(--astra-dark)">' + esc(ftypeLabel(f.type)) + '</div>' + opts + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px">' +
+          '<button class="btn ghost small" onclick="QUERY.moveField(\'' + f.fid + '\',-1)">↑</button>' +
+          '<button class="btn ghost small" onclick="QUERY.moveField(\'' + f.fid + '\',1)">↓</button>' +
+          '<button class="btn ghost small danger" onclick="QUERY.delField(\'' + f.fid + '\')">✕</button>' +
+        '</div></div></div>';
+    }).join("");
+  }
+  function nfTypeUI() { var t = $("nfType"); if (!t) return; var w = $("nfOptWrap"); if (w) w.style.display = needsOptions(t.value) ? "block" : "none"; }
+  function persistBuilder(cb) { saveFieldsDB(builder.code, builder.fields).then(function () { if (cb) cb(); }).catch(function () { toast("Gagal menyimpan"); }); }
+  function addField() {
+    var type = $("nfType").value, label = ($("nfLabel").value || "").trim();
+    if (!label) { toast("Isi pertanyaannya dulu"); return; }
+    var options = [];
+    if (needsOptions(type)) { options = ($("nfOpts").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean); if (options.length < 2) { toast("Beri minimal 2 pilihan jawaban"); return; } }
+    builder.fields.push({ fid: uid().slice(0, 8), type: type, label: label, options: options, required: $("nfReq").checked });
+    persistBuilder(function () { $("nfLabel").value = ""; $("nfOpts").value = ""; $("nfReq").checked = false; renderBuilderList(); toast("Pertanyaan ditambah ✓"); });
+  }
+  function delField(fid) { if (!confirm("Hapus pertanyaan ini?")) return; builder.fields = builder.fields.filter(function (f) { return f.fid !== fid; }); persistBuilder(renderBuilderList); }
+  function moveField(fid, dir) {
+    var i = -1; for (var k = 0; k < builder.fields.length; k++) if (builder.fields[k].fid === fid) i = k;
+    if (i < 0) return; var j = i + dir; if (j < 0 || j >= builder.fields.length) return;
+    var t = builder.fields[i]; builder.fields[i] = builder.fields[j]; builder.fields[j] = t; persistBuilder(renderBuilderList);
+  }
+
+  /* ----- Sesi survei: form (audience) / hasil (host) ----- */
+  function renderSurveySession() { if (sess.isOwner) renderSurveyResults(); else renderSurveyForm(); }
+
+  function renderSurveyForm() {
+    var ev = sess.event, fields = ev.fields || [];
+    if (localStorage.getItem("query_sub_" + sess.code)) { showThanks(); return; }
+    if (!fields.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Kuesioner") + '<div class="card center">Kuesioner ini belum memiliki pertanyaan.</div></div>'; return; }
+    var body = fields.map(function (f, i) { return '<div class="qfield"><div class="qflabel">' + (i + 1) + '. ' + esc(f.label) + (f.required ? ' <span style="color:#e0245e">*</span>' : '') + '</div>' + fieldInput(f) + '</div>'; }).join("");
+    view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Kuesioner") +
+      '<div class="card"><label class="fld">Nama / inisial Anda *</label><input type="text" id="respName" maxlength="40" placeholder="Nama Anda" />' +
+      '<div class="field-err" id="nameErr">Silahkan isi Nama Anda</div></div>' +
+      '<div class="card">' + body + '</div>' +
+      '<button class="btn block" id="subBtn" onclick="QUERY.submitSurvey()">Kirim Jawaban</button><div style="height:30px"></div></div>';
+    $("respName").value = sess.name || "";
+    $("respName").addEventListener("input", function () { respErr(false); });
+  }
+  function fieldInput(f) {
+    if (f.type === "short") return '<input type="text" id="fi_' + f.fid + '" maxlength="150" placeholder="Jawaban singkat" />';
+    if (f.type === "long") return '<textarea id="fi_' + f.fid + '" maxlength="600" placeholder="Jawaban Anda"></textarea>';
+    if (f.type === "rating") { var r = ""; for (var n = 1; n <= 5; n++) r += '<button type="button" class="rate" data-v="' + n + '" onclick="QUERY.pickRate(\'' + f.fid + '\',' + n + ')">' + n + '</button>'; return '<div class="rate-row" id="fi_' + f.fid + '">' + r + '</div>'; }
+    if (f.type === "single" || f.type === "multi") { var t = f.type === "single" ? "radio" : "checkbox"; return '<div class="opts" id="fi_' + f.fid + '">' + f.options.map(function (o) { return '<label class="opt"><input type="' + t + '" name="fi_' + f.fid + '" value="' + esc(o) + '" /> <span>' + esc(o) + '</span></label>'; }).join("") + '</div>'; }
+    return "";
+  }
+  function pickRate(fid, v) { var row = $("fi_" + fid); if (!row) return; row.setAttribute("data-val", v); var bs = row.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("on", parseInt(bs[i].getAttribute("data-v"), 10) <= v); }
+  function getFieldValue(f) {
+    var el = $("fi_" + f.fid); if (!el) return "";
+    if (f.type === "short" || f.type === "long") return (el.value || "").trim();
+    if (f.type === "rating") { var v = el.getAttribute("data-val"); return v ? parseInt(v, 10) : ""; }
+    if (f.type === "single") { var r = el.querySelector("input:checked"); return r ? r.value : ""; }
+    if (f.type === "multi") { return [].slice.call(el.querySelectorAll("input:checked")).map(function (c) { return c.value; }); }
+    return "";
+  }
+  function respErr(show) { var n = $("respName"), e = $("nameErr"); if (!n) return; if (show) { n.style.setProperty("border-color", "#e0245e", "important"); n.style.setProperty("box-shadow", "0 0 0 4px rgba(224,36,94,.16)", "important"); if (e) e.style.display = "block"; n.focus(); } else { n.style.removeProperty("border-color"); n.style.removeProperty("box-shadow"); if (e) e.style.display = "none"; } }
+  function submitSurvey() {
+    var ev = sess.event, fields = ev.fields || [], name = ($("respName").value || "").trim();
+    if (!name) { respErr(true); toast("Isi nama Anda dulu"); return; }
+    var answers = {};
+    for (var i = 0; i < fields.length; i++) {
+      var f = fields[i], val = getFieldValue(f);
+      if (f.required && (val === "" || val == null || (Array.isArray(val) && !val.length))) { toast("Lengkapi: " + f.label); var el = $("fi_" + f.fid); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      answers[f.fid] = val;
+    }
+    $("subBtn").disabled = true;
+    addResponse(sess.code, name, answers).then(function () { localStorage.setItem("query_name", name); localStorage.setItem("query_sub_" + sess.code, "1"); showThanks(); })
+      .catch(function () { toast("Gagal mengirim"); $("subBtn").disabled = false; });
+  }
+  function showThanks() {
+    view().innerHTML = '<div class="wrap">' + heroHTML(sess.event, "Kuesioner") +
+      '<div class="card center"><div style="font-size:2.6rem">🙏</div><h3 class="sec" style="margin-top:8px">Terima kasih!</h3>' +
+      '<p class="muted" style="margin:8px 0 0">Jawaban Anda sudah tercatat.</p></div></div>';
+  }
+
+  function renderSurveyResults() {
+    var ev = sess.event;
+    view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Hasil Kuesioner") +
+      '<div class="banner" style="background:var(--ok-soft);border-color:#b7e4c7;color:#0f7a37">✅ <b>Hasil (khusus host)</b> — real-time. <span class="nlink" style="margin-left:6px" onclick="QUERY.go(\'/dashboard\')">← Dashboard</span></div>' +
+      '<div class="ev-actions" style="margin-bottom:14px">' +
+        '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + sess.code + '\')">📝 Edit Pertanyaan</button>' +
+        '<button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR & Link</button>' +
+        '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Export CSV</button>' +
+      '</div>' + shareBoxHTML(sess.code) +
+      '<div id="results"><div class="empty">Menunggu respons…</div></div></div>';
+    sess.unsub = subscribeResponses(sess.code, function (resp) { sess.responses = resp; renderResults(); });
+  }
+  function aggregate(f, resp) {
+    var vals = resp.map(function (r) { return r.answers ? r.answers[f.fid] : undefined; });
+    if (f.type === "rating") {
+      var nums = vals.filter(function (v) { return typeof v === "number" && v > 0; });
+      var sum = nums.reduce(function (a, b) { return a + b; }, 0), dist = [0, 0, 0, 0, 0];
+      nums.forEach(function (v) { if (v >= 1 && v <= 5) dist[v - 1]++; });
+      return { count: nums.length, avg: nums.length ? sum / nums.length : 0, dist: dist };
+    }
+    if (f.type === "single" || f.type === "multi") {
+      var counts = {}; (f.options || []).forEach(function (o) { counts[o] = 0; });
+      var respCount = 0;
+      vals.forEach(function (v) {
+        if (v == null || v === "" || (Array.isArray(v) && !v.length)) return; respCount++;
+        if (Array.isArray(v)) v.forEach(function (o) { counts[o] = (counts[o] || 0) + 1; });
+        else counts[v] = (counts[v] || 0) + 1;
+      });
+      var arr = Object.keys(counts).map(function (o) { return { opt: o, n: counts[o], pct: respCount ? Math.round(counts[o] / respCount * 100) : 0 }; });
+      arr.sort(function (a, b) { return b.n - a.n; });
+      return { counts: arr, respCount: respCount, top: (arr[0] && arr[0].n > 0) ? arr[0] : null };
+    }
+    var texts = vals.filter(function (v) { return typeof v === "string" && v.trim(); });
+    return { count: texts.length, texts: texts };
+  }
+  function barRow(label, n, pct) { return '<div class="barrow"><span class="blabel">' + esc(label) + '</span><div class="bar"><div class="fill" style="width:' + pct + '%"></div></div><span class="bval">' + n + ' (' + pct + '%)</span></div>'; }
+  function summaryHTML(fields, resp) {
+    if (!fields.length) return "";
+    var lines = fields.map(function (f) {
+      var a = aggregate(f, resp);
+      if (f.type === "rating") return '<li><b>' + esc(f.label) + ':</b> rata-rata <b>' + a.avg.toFixed(2) + '/5</b> (' + a.count + ' respons)</li>';
+      if (f.type === "single" || f.type === "multi") { if (!a.top) return '<li><b>' + esc(f.label) + ':</b> belum ada jawaban</li>'; return '<li><b>' + esc(f.label) + ':</b> terbanyak “<b>' + esc(a.top.opt) + '</b>” (' + a.top.pct + '%)</li>'; }
+      return '<li><b>' + esc(f.label) + ':</b> ' + a.count + ' jawaban teks</li>';
+    }).join("");
+    return '<div class="card summary"><h3 class="sec">🧭 Ringkasan — Top Management View</h3><ul class="sumlist">' + lines + '</ul></div>';
+  }
+  function fieldResultCard(f, resp) {
+    var a = aggregate(f, resp), body = "";
+    var head = '<div class="rf-q">' + esc(f.label) + '</div><div class="badge" style="background:var(--astra-soft);color:var(--astra-dark);margin-bottom:10px">' + esc(ftypeLabel(f.type)) + '</div>';
+    if (f.type === "rating") {
+      body = '<div class="rf-avg">' + a.avg.toFixed(2) + ' <span>/5</span> <span class="muted" style="font-size:.8rem;font-weight:600">(' + a.count + ' respons)</span></div>';
+      for (var n = 5; n >= 1; n--) { var p = a.count ? Math.round(a.dist[n - 1] / a.count * 100) : 0; body += barRow(n + " ★", a.dist[n - 1], p); }
+    } else if (f.type === "single" || f.type === "multi") {
+      body = a.respCount ? a.counts.map(function (x) { return barRow(x.opt, x.n, x.pct); }).join("") : '<div class="muted">Belum ada jawaban</div>';
+    } else {
+      body = a.texts.length ? '<div class="txtlist">' + a.texts.slice(0, 60).map(function (t) { return '<div class="txtitem">' + esc(t) + '</div>'; }).join("") + '</div>' : '<div class="muted">Belum ada jawaban</div>';
+    }
+    return '<div class="card rf">' + head + body + '</div>';
+  }
+  function cellVal(v) { if (v == null) return "—"; if (Array.isArray(v)) return v.length ? v.join(", ") : "—"; if (v === "") return "—"; return String(v); }
+  function tableHTML(fields, resp) {
+    var thead = '<tr><th>Responden</th><th>Waktu</th>' + fields.map(function (f) { return '<th>' + esc(f.label) + '</th>'; }).join("") + '</tr>';
+    var rows = resp.slice().sort(function (a, b) { return tsOf(b) - tsOf(a); }).map(function (r) {
+      var cells = fields.map(function (f) { return '<td>' + esc(cellVal(r.answers ? r.answers[f.fid] : "")) + '</td>'; }).join("");
+      return '<tr><td class="rname">' + esc(r.name || "Anonim") + '</td><td class="rtime">' + ago(tsOf(r)) + '</td>' + cells + '</tr>';
+    }).join("");
+    return '<div class="card"><h3 class="sec">📋 Tabel Respons</h3><div class="tbl-wrap"><table class="rtbl"><thead>' + thead + '</thead><tbody>' + rows + '</tbody></table></div></div>';
+  }
+  function renderResults() {
+    var ev = sess.event, fields = ev.fields || [], resp = sess.responses || [], el = $("results"); if (!el) return;
+    var head = '<div class="stats" style="margin-bottom:14px"><div class="stat"><div class="n">' + resp.length + '</div><div class="l">Responden</div></div><div class="stat"><div class="n">' + fields.length + '</div><div class="l">Pertanyaan</div></div></div>';
+    if (!fields.length) { el.innerHTML = head + '<div class="empty">Belum ada pertanyaan. <span class="nlink" onclick="QUERY.go(\'/build/' + sess.code + '\')">Susun dulu →</span></div>'; return; }
+    if (!resp.length) { el.innerHTML = head + '<div class="empty">Belum ada yang mengisi. Bagikan QR/link-nya 👆</div>'; return; }
+    el.innerHTML = head + summaryHTML(fields, resp) + fields.map(function (f) { return fieldResultCard(f, resp); }).join("") + tableHTML(fields, resp);
+  }
+  function exportSurvey() {
+    var ev = sess.event, fields = ev.fields || [], resp = sess.responses || [];
+    var rows = [["Nama", "Waktu"].concat(fields.map(function (f) { return f.label; }))];
+    resp.slice().sort(function (a, b) { return tsOf(a) - tsOf(b); }).forEach(function (r) {
+      var row = [r.name || "Anonim", tsOf(r) ? new Date(tsOf(r)).toLocaleString("id-ID") : ""];
+      fields.forEach(function (f) { var v = r.answers ? r.answers[f.fid] : ""; row.push(Array.isArray(v) ? v.join(" | ") : (v == null ? "" : String(v))); });
+      rows.push(row);
+    });
+    var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "hasil-kuesioner-" + ev.code + ".csv"; a.click(); URL.revokeObjectURL(a.href);
+  }
+
   /* ---------- API global untuk markup onclick ---------- */
   window.QUERY = {
     go: go, seg: seg, logout: function () { clearHost(); setNav(); toast("Keluar"); go("/"); },
     login: doLogin, register: doRegister, join: doJoin,
     createEvent: doCreateEvent, share: doShare, copy: doCopy, delEvent: doDelEvent,
     react: react, toggleReply: toggleReply, sendReply: sendReply, openAnswer: openAnswer, saveAnswer: saveAnswer, unanswer: unanswer, delQ: delQ,
-    fmt: fmt, fmtKey: fmtKey
+    fmt: fmt, fmtKey: fmtKey,
+    pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
+    pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey
   };
 
   function boot() { window.addEventListener("hashchange", route); route(); }

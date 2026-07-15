@@ -174,6 +174,45 @@
     .share-box .lnk{font-size:.76rem;color:var(--astra-dark);word-break:break-all;margin-top:9px;font-weight:600}
     .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--astra-dark);font-weight:800;font-size:.85rem;text-decoration:none;cursor:pointer;background:none;border:none;padding:0;margin:2px 0 12px}
 
+    /* ===== Kuesioner: builder & form ===== */
+    select{width:100%;border:2px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;background:var(--astra-soft2);color:var(--ink)}
+    select:focus{outline:none;border-color:var(--astra);background:#fff}
+    .chk{display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;color:var(--muted)}
+    .chk input{width:auto}
+    .qfield{margin-bottom:18px} .qfield:last-child{margin-bottom:0}
+    .qflabel{font-weight:700;margin-bottom:9px;font-size:.98rem}
+    .opts{display:flex;flex-direction:column;gap:8px}
+    .opt{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:11px 13px;cursor:pointer;font-weight:600;background:#fff}
+    .opt:hover{border-color:#cfe0f5;background:var(--astra-soft2)}
+    .opt input{width:auto;margin:0}
+    .rate-row{display:flex;gap:8px}
+    .rate{flex:1;height:48px;border:2px solid var(--line);background:#fff;border-radius:12px;font:inherit;font-weight:800;font-size:1.1rem;color:var(--muted);cursor:pointer}
+    .rate:hover{border-color:#cfe0f5}
+    .rate.on{background:linear-gradient(135deg,var(--astra),#2f8ad6);color:#fff;border-color:var(--astra)}
+
+    /* ===== Hasil kuesioner ===== */
+    .stats{display:flex;gap:10px}
+    .stat{flex:1;text-align:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 8px;box-shadow:var(--shadow-sm)}
+    .stat .n{font-size:1.7rem;font-weight:900;color:var(--astra-dark);font-variant-numeric:tabular-nums}
+    .stat .l{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-top:2px}
+    .summary .sumlist{margin:8px 0 0;padding-left:20px} .summary .sumlist li{margin:5px 0;font-size:.92rem;line-height:1.45}
+    .rf .rf-q{font-weight:800;font-size:1rem}
+    .rf .rf-avg{font-size:1.8rem;font-weight:900;color:var(--astra-dark);margin-bottom:10px} .rf .rf-avg span{font-size:1rem;color:var(--muted)}
+    .barrow{display:flex;align-items:center;gap:10px;margin:7px 0}
+    .barrow .blabel{width:34%;font-size:.85rem;font-weight:600;word-break:break-word}
+    .barrow .bar{flex:1;height:14px;background:var(--astra-soft);border-radius:999px;overflow:hidden}
+    .barrow .bar .fill{height:100%;background:linear-gradient(90deg,var(--astra),#2f8ad6);border-radius:999px;transition:width .3s}
+    .barrow .bval{width:78px;text-align:right;font-size:.8rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+    .txtlist{display:flex;flex-direction:column;gap:8px}
+    .txtitem{background:var(--astra-soft2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:.9rem;white-space:pre-wrap;word-wrap:break-word}
+    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
+    .rtbl{border-collapse:collapse;width:100%;font-size:.85rem}
+    .rtbl th,.rtbl td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+    .rtbl th{white-space:nowrap;background:var(--astra-soft);color:var(--astra-dark);font-weight:800}
+    .rtbl td{min-width:110px;max-width:280px;white-space:pre-wrap;word-wrap:break-word}
+    .rtbl .rname{font-weight:700} .rtbl .rtime{color:var(--muted);font-size:.78rem;white-space:nowrap}
+    .rtbl tbody tr:nth-child(even){background:#fafcff}
+
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
@@ -205,10 +244,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=8"></script>
+  <script src="config.js?v=9"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
   <script>App.boot();</script>
 </body>
 </html>
