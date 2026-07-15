@@ -1005,7 +1005,7 @@
         '<div class="pm-flag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
         '<div class="pm-info"><div class="pm-name">' + esc(o.name) + ' <span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
         '<div class="pm-bar"><div class="pm-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div></div></div>' +
-        '<div class="pm-pct"><div class="pm-num" id="vcn_' + o.oid + '">0%</div><div class="pm-votes" id="pv_' + o.oid + '">0 vote</div></div>' +
+        '<div class="pm-pct"><div class="pm-numrow"><span class="pm-trend" id="ptr_' + o.oid + '">•</span><span class="pm-num" id="vcn_' + o.oid + '">0%</span></div><div class="pm-votes" id="pv_' + o.oid + '">0 vote</div></div>' +
         '</div>';
     }).join("");
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
@@ -1030,6 +1030,7 @@
     sess.pxCells = {};
     opts.forEach(function (o) { var g = $("pf_" + o.oid); if (g) sess.pxCells[o.oid] = [].slice.call(g.children); });
     sess.lastVoteSeen = (ev.lastVote && ev.lastVote.ts) || 0;
+    sess.prevPct = {}; sess.trend = {}; sess.orderKey = "";
     setTimeout(sizeVoteFlags, 30);
     if (!window.__vresize) { window.__vresize = true; window.addEventListener("resize", function () { if (document.querySelector(".vote-screen")) sizeVoteFlags(); }); }
     updateVoteLive(ev.voteCounts || {});
@@ -1038,12 +1039,21 @@
     var opts = (sess.event && sess.event.options) || [];
     opts.forEach(function (o) { var pff = $("pff_" + o.oid); if (!pff) return; var wrap = pff.parentNode; var cw = wrap.clientWidth, ch = wrap.clientHeight; if (!cw || !ch) return; var w = Math.min(cw, ch * 1.5), h = w / 1.5; pff.style.width = Math.floor(w) + "px"; pff.style.height = Math.floor(h) + "px"; });
   }
+  function reorderRows(sorted) {
+    var list = document.querySelector(".pm-list"); if (!list) return;
+    var els = sorted.map(function (o) { return $("vq_" + o.oid); }).filter(Boolean);
+    var oldTop = {}; els.forEach(function (el) { oldTop[el.id] = el.getBoundingClientRect().top; });
+    els.forEach(function (el) { list.appendChild(el); });
+    els.forEach(function (el) {
+      var dy = oldTop[el.id] - el.getBoundingClientRect().top;
+      if (dy) { el.style.transition = "none"; el.style.transform = "translateY(" + dy + "px)"; requestAnimationFrame(function () { el.style.transition = "transform .6s cubic-bezier(.2,.8,.2,1)"; el.style.transform = ""; }); }
+    });
+  }
   function updateVoteLive(counts) {
     var opts = (sess.event && sess.event.options) || [], total = 0, maxC = 0;
+    var idx = {}; opts.forEach(function (o, i) { idx[o.oid] = i; });
     opts.forEach(function (o) { var c = counts[o.oid] || 0; total += c; if (c > maxC) maxC = c; });
-    var sorted = opts.slice().sort(function (a, b) { return (counts[b.oid] || 0) - (counts[a.oid] || 0); });
-    var rankOf = {}; sorted.forEach(function (o, i) { rankOf[o.oid] = i; });
-    var medals = ["🥇", "🥈", "🥉"];
+    sess.prevPct = sess.prevPct || {}; sess.trend = sess.trend || {};
     opts.forEach(function (o) {
       var c = counts[o.oid] || 0, N = Math.min(PXN, c), pct = total ? Math.round(c / total * 100) : 0;
       var cells = sess.pxCells && sess.pxCells[o.oid];
@@ -1051,11 +1061,18 @@
       var pf = $("vpf_" + o.oid); if (pf) pf.style.width = pct + "%";
       var ce = $("vcn_" + o.oid); if (ce) ce.textContent = pct + "%";
       var pv = $("pv_" + o.oid); if (pv) pv.textContent = c + " vote";
+      var prev = sess.prevPct[o.oid];
+      if (prev !== undefined && pct !== prev) sess.trend[o.oid] = pct > prev ? "up" : "down";
+      sess.prevPct[o.oid] = pct;
+      var tr = $("ptr_" + o.oid); if (tr) { var t = sess.trend[o.oid] || ""; tr.className = "pm-trend " + t; tr.textContent = t === "up" ? "▲" : t === "down" ? "▼" : "•"; }
       var isLead = c > 0 && c === maxC;
       var ld = $("vld_" + o.oid); if (ld) ld.style.display = isLead ? "inline-block" : "none";
       var vq = $("vq_" + o.oid); if (vq) vq.classList.toggle("leader", isLead);
-      var rk = $("prk_" + o.oid); if (rk) rk.textContent = (c > 0) ? (medals[rankOf[o.oid]] || (rankOf[o.oid] + 1)) : "–";
     });
+    var sorted = opts.slice().sort(function (a, b) { var d = (counts[b.oid] || 0) - (counts[a.oid] || 0); return d !== 0 ? d : idx[a.oid] - idx[b.oid]; });
+    sorted.forEach(function (o, i) { var rk = $("prk_" + o.oid); if (rk) { rk.textContent = (i + 1); rk.className = "pm-rank r" + (i + 1); } });
+    var orderKey = sorted.map(function (o) { return o.oid; }).join(",");
+    if (orderKey !== sess.orderKey) { sess.orderKey = orderKey; reorderRows(sorted); }
     var vt = $("vtotal"); if (vt) vt.textContent = total;
   }
 
