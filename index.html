@@ -270,6 +270,17 @@
     .pxfill{position:absolute;inset:0;background-size:1500% 1000%;background-repeat:no-repeat;opacity:0;transform:scale(.55);transition:opacity .4s ease,transform .4s cubic-bezier(.2,1.5,.4,1)}
     .px.on .pxfill{opacity:1;transform:scale(1)}
 
+    /* QR "SCAN & VOTE" catchy di layar live */
+    .vqr{position:fixed;right:22px;bottom:20px;z-index:45;display:flex;align-items:center;gap:2px;pointer-events:none}
+    .vqr-arrow{font-size:2.8rem;animation:vqrbounce 0.9s infinite;filter:drop-shadow(0 3px 6px rgba(0,0,0,.28))}
+    @keyframes vqrbounce{0%,100%{transform:translateX(-2px)}50%{transform:translateX(14px)}}
+    .vqr-card{background:#fff;border-radius:18px;padding:12px 14px 9px;box-shadow:0 16px 44px rgba(0,0,0,.30);text-align:center;border:3px solid var(--astra);animation:vqrpulse 1.5s infinite}
+    @keyframes vqrpulse{0%,100%{box-shadow:0 16px 44px rgba(0,0,0,.30),0 0 0 0 rgba(47,138,214,.55)}50%{box-shadow:0 16px 44px rgba(0,0,0,.30),0 0 0 16px rgba(47,138,214,0)}}
+    .vqr-title{font-weight:900;color:var(--astra-dark);font-size:1.02rem;letter-spacing:.02em;margin-bottom:7px}
+    .vqr-img{width:158px;height:158px;display:block;border-radius:8px}
+    .vqr-sub{font-size:.72rem;color:var(--muted);margin-top:6px}
+    @media(max-width:560px){ .vqr-img{width:120px;height:120px} .vqr-arrow{font-size:2rem} }
+
     /* Confetti + popup notif */
     .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
     .confetti i{position:absolute;top:-16px;width:10px;height:14px;border-radius:2px;opacity:.95;animation:confall 2.4s cubic-bezier(.3,.6,.5,1) forwards}
@@ -311,10 +322,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=16"></script>
+  <script src="config.js?v=17"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=16"></script>
+  <script src="app.js?v=17"></script>
   <script>App.boot();</script>
 </body>
 </html>

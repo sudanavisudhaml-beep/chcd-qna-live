@@ -117,7 +117,7 @@
   }
   function saveFieldsDB(code, fields) { return db.collection("events").doc(code).update({ fields: fields }); }
   function saveOptionsDB(code, options) { return db.collection("events").doc(code).update({ options: options }); }
-  function voteFor(code, oid, name) { var u = {}; u["voteCounts." + oid] = FV().increment(1); u.lastVote = { name: (name || "Seseorang"), oid: oid, ts: Date.now() }; return db.collection("events").doc(code).update(u); }
+  function voteFor(code, oid) { var u = {}; u["voteCounts." + oid] = FV().increment(1); u.lastVote = { oid: oid, ts: Date.now() }; return db.collection("events").doc(code).update(u); }
   function subscribeEvent(code, cb) { return db.collection("events").doc(code).onSnapshot(function (d) { if (d.exists) cb(d.data()); }); }
 
   /* ---------- DB: responses (subkoleksi survei per event) ---------- */
@@ -843,6 +843,17 @@
      VOTE — pilih opsi (mis. negara), bendera membesar seiring vote
      ============================================================ */
   function flagUrl(code) { return "https://flagcdn.com/w320/" + String(code || "").trim().toLowerCase() + ".png"; }
+  function voteQrHTML(ev) {
+    var link = sessionURL(ev.code);
+    var qr = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(link);
+    return '<div class="vqr">' +
+      '<div class="vqr-arrow">👉</div>' +
+      '<div class="vqr-card">' +
+        '<div class="vqr-title">SCAN &amp; VOTE! 📲</div>' +
+        '<img class="vqr-img" src="' + qr + '" alt="QR Vote" />' +
+        '<div class="vqr-sub">Arahkan kamera HP · Kode <b>' + esc(ev.code) + '</b></div>' +
+      '</div></div>';
+  }
 
   /* ----- Efek: suara "ting", confetti, popup notif ----- */
   var audioCtx = null;
@@ -858,16 +869,16 @@
     for (var i = 0; i < 60; i++) { var d = document.createElement("i"); d.style.left = (Math.random() * 100) + "%"; d.style.background = CONF_COLORS[i % CONF_COLORS.length]; d.style.animationDelay = (Math.random() * 0.25).toFixed(2) + "s"; d.style.setProperty("--x", (Math.random() * 240 - 120).toFixed(0) + "px"); d.style.setProperty("--r", (Math.random() * 720 - 360).toFixed(0) + "deg"); wrap.appendChild(d); }
     document.body.appendChild(wrap); setTimeout(function () { wrap.remove(); }, 2600);
   }
-  function votePopup(name, team) {
-    var p = document.createElement("div"); p.className = "vpop"; p.innerHTML = '<span class="vpop-em">🎉</span><b>' + esc(name) + '</b> vote untuk <b>' + esc(team) + '</b>!';
+  function votePopup(team) {
+    var p = document.createElement("div"); p.className = "vpop"; p.innerHTML = '<span class="vpop-em">🎉</span><b>1 Vote</b> untuk <b>' + esc(team) + '</b>!';
     document.body.appendChild(p); requestAnimationFrame(function () { p.classList.add("show"); });
-    setTimeout(function () { p.classList.remove("show"); setTimeout(function () { p.remove(); }, 400); }, 2600);
+    setTimeout(function () { p.classList.remove("show"); setTimeout(function () { p.remove(); }, 400); }, 2400);
   }
   function teamName(oid) { var opts = (sess.event && sess.event.options) || []; for (var i = 0; i < opts.length; i++) if (opts[i].oid === oid) return opts[i].name; return "Tim"; }
   function handleLastVote(lv) {
     if (!lv || !lv.ts || lv.ts === sess.lastVoteSeen) return;
     sess.lastVoteSeen = lv.ts;
-    playTing(); confettiBurst(); votePopup(lv.name || "Seseorang", teamName(lv.oid));
+    playTing(); confettiBurst(); votePopup(teamName(lv.oid));
   }
 
   var builderVote = null;
@@ -931,17 +942,13 @@
     var ev = sess.event, opts = ev.options || [];
     if (!opts.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote") + '<div class="card center">Belum ada opsi untuk dipilih.</div></div>'; return; }
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote — Pilih Tim Anda") +
-      '<div class="card"><label class="fld">Nama / inisial Anda (tampil di layar)</label><input type="text" id="vName" maxlength="24" placeholder="mis. SVI" /></div>' +
       '<div class="vote-grid">' + opts.map(function (o) { return '<button class="vote-card" onclick="QUERY.vote(\'' + o.oid + '\')"><img class="flag-md" src="' + flagUrl(o.code) + '" onerror="this.style.display=\'none\'" /><div class="vc-name">' + esc(o.name) + '</div></button>'; }).join("") + '</div>' +
-      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 (satu suara per perangkat)</p></div>';
-    var vn = $("vName"); if (vn) vn.value = localStorage.getItem("query_name") || "";
+      '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 — cukup sekali, langsung tercatat</p></div>';
   }
   function doVote(oid) {
+    if (localStorage.getItem("query_vote_" + sess.code)) { toast("Anda sudah vote 🙌"); renderVoteSession(); return; }
     ensureAudio();
-    var raw = (($("vName") ? $("vName").value : "") || localStorage.getItem("query_name") || "").trim();
-    if (raw) localStorage.setItem("query_name", raw);
-    var name = raw || "Seseorang";
-    voteFor(sess.code, oid, name).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
+    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, oid); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
   }
   // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
   var PXN = 150;
@@ -976,6 +983,7 @@
           '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> vote</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
         '</div>' +
         '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
+        (sess.isOwner ? voteQrHTML(ev) : '') +
         shareBoxHTML(sess.code) +
       '</div>';
     sess.pxCells = {};
