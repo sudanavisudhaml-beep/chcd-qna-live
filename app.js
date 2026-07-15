@@ -135,8 +135,9 @@
         var d = (doc.exists && doc.data()) || {};
         var va = d.voterAlias || {};
         if (ak && va[ak]) { var e = new Error("dup-alias"); e.dupAlias = va[ak]; throw e; }
+        var vc = d.voteCounts || {};
         var u = {};
-        u["voteCounts." + oid] = FV().increment(1);
+        u["voteCounts." + oid] = (vc[oid] || 0) + 1;  // nilai absolut dari hasil read → idempoten walau transaksi retry (increment bisa dobel saat retry)
         u.lastVote = { oid: oid, ts: ts };
         if (dev) u["voters." + dev] = round;
         if (ak) u["voterAlias." + ak] = { n: aname, o: oid, t: ts };
