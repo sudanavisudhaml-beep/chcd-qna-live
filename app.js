@@ -847,11 +847,11 @@
     var link = sessionURL(ev.code);
     var qr = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(link);
     return '<div class="vqr">' +
-      '<div class="vqr-arrow">👉</div>' +
+      '<div class="vqr-arrow">👇</div>' +
       '<div class="vqr-card">' +
         '<div class="vqr-title">SCAN &amp; VOTE! 📲</div>' +
         '<img class="vqr-img" src="' + qr + '" alt="QR Vote" />' +
-        '<div class="vqr-sub">Arahkan kamera HP · Kode <b>' + esc(ev.code) + '</b></div>' +
+        '<div class="vqr-sub">Arahkan kamera HP<br/>Kode <b>' + esc(ev.code) + '</b></div>' +
       '</div></div>';
   }
 
@@ -970,20 +970,22 @@
       ? '<span class="live-pill vs-pill"><span class="dot"></span> Live Vote</span>'
       : (mine ? '<span class="live-pill vs-pill">✅ Pilihan Anda: ' + esc(mine.name) + '</span>' : '');
     var cells = opts.map(function (o) {
-      return '<div class="vq"><div class="vname">' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
+      return '<div class="vq" id="vq_' + o.oid + '"><div class="vname"><span class="vlead" id="vld_' + o.oid + '">🏆</span>' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div><div class="vcount" id="vcn_' + o.oid + '">0</div></div>';
     }).join("");
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
       (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' : '') +
       '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
     view().innerHTML =
-      '<div class="vote-screen">' +
+      '<div class="vote-screen vs-football">' +
         '<div class="vs-top">' +
           '<img class="vs-logo" src="query-logo.png" alt="QUERY" onerror="this.style.display=\'none\'" />' +
-          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div>' + pill + '</div>' +
+          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '<span class="vs-wc">⚽ World Cup 2026 · Special Edition</span></div></div>' +
           '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> vote</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
         '</div>' +
-        '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
-        (sess.isOwner ? voteQrHTML(ev) : '') +
+        '<div class="vs-body">' +
+          '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
+          (sess.isOwner ? '<aside class="vs-side">' + voteQrHTML(ev) + '</aside>' : '') +
+        '</div>' +
         shareBoxHTML(sess.code) +
       '</div>';
     sess.pxCells = {};
@@ -998,13 +1000,16 @@
     opts.forEach(function (o) { var pff = $("pff_" + o.oid); if (!pff) return; var wrap = pff.parentNode; var cw = wrap.clientWidth, ch = wrap.clientHeight; if (!cw || !ch) return; var w = Math.min(cw, ch * 1.5), h = w / 1.5; pff.style.width = Math.floor(w) + "px"; pff.style.height = Math.floor(h) + "px"; });
   }
   function updateVoteLive(counts) {
-    var opts = (sess.event && sess.event.options) || [], total = 0;
-    opts.forEach(function (o) { total += counts[o.oid] || 0; });
+    var opts = (sess.event && sess.event.options) || [], total = 0, maxC = 0;
+    opts.forEach(function (o) { var c = counts[o.oid] || 0; total += c; if (c > maxC) maxC = c; });
     opts.forEach(function (o) {
       var c = counts[o.oid] || 0, N = Math.min(PXN, c);
       var cells = sess.pxCells && sess.pxCells[o.oid];
       if (cells) for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", PXRANK[i] < N);
       var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + (total ? " · " + Math.round(c / total * 100) + "%" : "");
+      var isLead = c > 0 && c === maxC;
+      var ld = $("vld_" + o.oid); if (ld) ld.style.display = isLead ? "inline-block" : "none";
+      var vq = $("vq_" + o.oid); if (vq) vq.classList.toggle("leader", isLead);
     });
     var vt = $("vtotal"); if (vt) vt.textContent = total;
   }
