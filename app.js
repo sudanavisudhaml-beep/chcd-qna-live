@@ -109,7 +109,7 @@
         if (d.exists) { if (tries > 5) throw new Error("Gagal membuat kode"); return attempt(tries + 1); }
         var doc = { code: code, hostUser: host.user, hostName: host.name, eventName: eventName.trim(), materi: (materi || "").trim(), type: (type || "qna"), createdAt: FV().serverTimestamp() };
         if (type === "survey") doc.fields = [];
-        if (type === "vote") { doc.options = []; doc.voteCounts = {}; }
+        if (type === "vote") { doc.options = []; doc.voteCounts = {}; doc.voteRound = uid().slice(0, 10); }
         return ref.set(doc).then(function () { return code; });
       });
     }
@@ -944,14 +944,14 @@
     var t = builderVote.options[i]; builderVote.options[i] = builderVote.options[j]; builderVote.options[j] = t; persistVote(renderTeamList);
   }
 
-  // Vote perangkat ini (hangus bila host me-reset babak: ts < voteResetAt)
+  // Vote perangkat ini (hangus bila host me-reset babak: round berubah)
   function getMyVote() {
     var raw = localStorage.getItem("query_vote_" + sess.code);
     if (!raw) return null;
     var v; try { v = JSON.parse(raw); } catch (e) { v = null; }
-    if (!v || typeof v !== "object") v = { oid: String(raw), ts: 0 };
-    var resetAt = (sess.event && sess.event.voteResetAt) || 0;
-    if (resetAt && (v.ts || 0) < resetAt) { localStorage.removeItem("query_vote_" + sess.code); return null; }
+    if (!v || typeof v !== "object") return null;
+    var round = (sess.event && sess.event.voteRound) || "";
+    if (round && v.round !== round) { localStorage.removeItem("query_vote_" + sess.code); return null; }
     return v;
   }
   function renderVoteSession() {
@@ -962,7 +962,7 @@
   function resetVote() {
     if (!sess.isOwner) return;
     if (!confirm("Reset semua vote ke 0 dan mulai babak baru? Semua orang bisa vote lagi.")) return;
-    var u = { lastVote: FV().delete(), voteResetAt: Date.now() };
+    var u = { lastVote: FV().delete(), voteRound: uid().slice(0, 10) };
     (sess.event.options || []).forEach(function (o) { u["voteCounts." + o.oid] = 0; });
     db.collection("events").doc(sess.code).update(u).then(function () { toast("Vote di-reset — mulai dari awal ✓"); }).catch(function () { toast("Gagal reset"); });
   }
@@ -974,9 +974,9 @@
       '<p class="muted center" style="margin-top:14px;font-size:.85rem">Ketuk tim yang Anda dukung 🎉 — cukup sekali, langsung tercatat</p></div>';
   }
   function doVote(oid) {
-    if (getMyVote()) { toast("Anda sudah vote 🙌"); renderVoteSession(); return; }
+    if (getMyVote()) { toast("Anda sudah vote 🙌 (1 HP 1 suara)"); renderVoteSession(); return; }
     ensureAudio();
-    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, JSON.stringify({ oid: oid, ts: Date.now() })); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
+    voteFor(sess.code, oid).then(function () { localStorage.setItem("query_vote_" + sess.code, JSON.stringify({ oid: oid, round: (sess.event && sess.event.voteRound) || "" })); toast("Vote terkirim! 🎉"); renderVoteSession(); }).catch(function () { toast("Gagal vote"); });
   }
   // Grid pixel: 150 sel (15×10), urutan reveal acak-deterministik
   var PXN = 150;
@@ -1031,7 +1031,7 @@
     opts.forEach(function (o) { var g = $("pf_" + o.oid); if (g) sess.pxCells[o.oid] = [].slice.call(g.children); });
     sess.lastVoteSeen = (ev.lastVote && ev.lastVote.ts) || 0;
     sess.prevPct = {}; sess.trend = {}; sess.orderKey = "";
-    setTimeout(sizeVoteFlags, 30);
+    requestAnimationFrame(sizeVoteFlags); setTimeout(sizeVoteFlags, 200);
     if (!window.__vresize) { window.__vresize = true; window.addEventListener("resize", function () { if (document.querySelector(".vote-screen")) sizeVoteFlags(); }); }
     updateVoteLive(ev.voteCounts || {});
   }
