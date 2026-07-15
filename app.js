@@ -991,29 +991,37 @@
     for (var i = 0; i < PXN; i++) { var col = i % cols, row = Math.floor(i / cols); var px = (col / (cols - 1) * 100).toFixed(2), py = (row / (rows - 1) * 100).toFixed(2); cells += '<div class="px"><i class="pxfill" style="background-image:url(' + flag + ');background-position:' + px + '% ' + py + '%"></i></div>'; }
     return '<div class="pxflag" id="pff_' + oid + '"><div class="pxgrid" id="pf_' + oid + '">' + cells + '</div></div>';
   }
+  var TEAM_COLORS = ["#f43f5e", "#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#06b6d4"];
   function buildVoteLiveShell(votedOid) {
     var ev = sess.event, opts = ev.options || [];
     var mine = votedOid ? opts.filter(function (o) { return o.oid === votedOid; })[0] : null;
     var pill = sess.isOwner
-      ? '<span class="live-pill vs-pill"><span class="dot"></span> Live Vote</span>'
+      ? '<span class="live-pill vs-pill"><span class="dot"></span> Live</span>'
       : (mine ? '<span class="live-pill vs-pill">✅ Pilihan Anda: ' + esc(mine.name) + '</span>' : '');
-    var cells = opts.map(function (o) {
-      return '<div class="vq" id="vq_' + o.oid + '"><div class="vname"><span class="vlead" id="vld_' + o.oid + '">🏆</span>' + esc(o.name) + '</div><div class="vqflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
-        '<div class="vprog"><div class="vprog-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div><span class="vprog-label" id="vcn_' + o.oid + '">0</span></div></div>';
+    var rows = opts.map(function (o, i) {
+      var col = TEAM_COLORS[i % TEAM_COLORS.length];
+      return '<div class="pm-row" id="vq_' + o.oid + '" style="--tc:' + col + '">' +
+        '<div class="pm-rank" id="prk_' + o.oid + '">' + (i + 1) + '</div>' +
+        '<div class="pm-flag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
+        '<div class="pm-info"><div class="pm-name">' + esc(o.name) + ' <span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
+        '<div class="pm-bar"><div class="pm-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div></div></div>' +
+        '<div class="pm-pct"><div class="pm-num" id="vcn_' + o.oid + '">0%</div><div class="pm-votes" id="pv_' + o.oid + '">0 vote</div></div>' +
+        '</div>';
     }).join("");
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
       (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
         '<button class="vs-btn" title="Reset vote (babak baru)" onclick="QUERY.resetVote()">🔄</button>' : '') +
       '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
     view().innerHTML =
-      '<div class="vote-screen vs-football">' +
+      '<div class="vote-screen vs-pm">' +
+        '<div class="pm-orbs"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="o4"></i></div>' +
         '<div class="vs-top">' +
-          '<img class="vs-logo" src="query-logo.png" alt="QUERY" onerror="this.style.display=\'none\'" />' +
+          '<span class="vs-logobox"><img class="vs-logo" src="query-logo.png" alt="QUERY" onerror="this.style.display=\'none\'" /></span>' +
           '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '<span class="vs-wc">⚽ World Cup 2026 · Special Edition</span></div></div>' +
           '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> vote</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
         '</div>' +
         '<div class="vs-body">' +
-          '<div class="vs-grid vlive-' + Math.min(opts.length, 4) + '">' + cells + '</div>' +
+          '<div class="pm-list">' + rows + '</div>' +
           (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot">' + wcBadgeHTML() + '</div></aside>' : '') +
         '</div>' +
         '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk</div>' +
@@ -1033,16 +1041,20 @@
   function updateVoteLive(counts) {
     var opts = (sess.event && sess.event.options) || [], total = 0, maxC = 0;
     opts.forEach(function (o) { var c = counts[o.oid] || 0; total += c; if (c > maxC) maxC = c; });
+    var sorted = opts.slice().sort(function (a, b) { return (counts[b.oid] || 0) - (counts[a.oid] || 0); });
+    var rankOf = {}; sorted.forEach(function (o, i) { rankOf[o.oid] = i; });
+    var medals = ["🥇", "🥈", "🥉"];
     opts.forEach(function (o) {
-      var c = counts[o.oid] || 0, N = Math.min(PXN, c);
+      var c = counts[o.oid] || 0, N = Math.min(PXN, c), pct = total ? Math.round(c / total * 100) : 0;
       var cells = sess.pxCells && sess.pxCells[o.oid];
       if (cells) for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", PXRANK[i] < N);
-      var pct = total ? Math.round(c / total * 100) : 0;
-      var ce = $("vcn_" + o.oid); if (ce) ce.textContent = c + " · " + pct + "%";
       var pf = $("vpf_" + o.oid); if (pf) pf.style.width = pct + "%";
+      var ce = $("vcn_" + o.oid); if (ce) ce.textContent = pct + "%";
+      var pv = $("pv_" + o.oid); if (pv) pv.textContent = c + " vote";
       var isLead = c > 0 && c === maxC;
       var ld = $("vld_" + o.oid); if (ld) ld.style.display = isLead ? "inline-block" : "none";
       var vq = $("vq_" + o.oid); if (vq) vq.classList.toggle("leader", isLead);
+      var rk = $("prk_" + o.oid); if (rk) rk.textContent = (c > 0) ? (medals[rankOf[o.oid]] || (rankOf[o.oid] + 1)) : "–";
     });
     var vt = $("vtotal"); if (vt) vt.textContent = total;
   }
