@@ -393,14 +393,15 @@
     /* Emblem World Cup (baris 2 panel) */
     .wc-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;max-width:100%;height:100%}
     .wc-logo{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
-    .wc-img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 8px 22px rgba(0,0,0,.3))}
+    /* Outline putih tipis (keyline gaya stiker) agar logo gelap terbaca di background gelap — bukan kotak, bukan glow */
+    .wc-img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 0 1.1px #fff) drop-shadow(0 0 1.1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 3px 9px rgba(0,0,0,.45))}
     .wc-date{flex:0 0 auto;font-size:.72rem;font-weight:800;padding:5px 13px;border-radius:999px;background:rgba(255,209,102,.16);border:1px solid rgba(255,209,102,.45);color:#f5a623;white-space:nowrap}
     .vs-pm .wc-date{color:#ffd166}
     /* Footer emblem WC: HANYA tampil di mobile (desktop pakai posisi lama di bawah QR). PNG transparan, TANPA kotak & TANPA glow, di tengah bawah */
     .vs-foot{display:none;flex:0 0 auto;align-items:center;justify-content:center;padding:6px 0 2px}
     .vs-foot .wc-badge{flex-direction:column;height:auto;gap:8px}
     .vs-foot .wc-logo{flex:0 0 auto;width:auto;padding:0;background:none;border:0;box-shadow:none}
-    .vs-foot .wc-img{max-height:min(15vh,150px);max-width:min(62vw,320px);filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
+    .vs-foot .wc-img{max-height:min(15vh,150px);max-width:min(62vw,320px);filter:drop-shadow(0 0 1.1px #fff) drop-shadow(0 0 1.1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 3px 9px rgba(0,0,0,.45))}
     /* Emblem di panel samping (desktop): sedikit diperkecil + diturunkan agar tak terlalu dekat QR */
     .vs-side .vs-slot-wc{align-items:flex-end}
     .vs-side .vs-slot-wc .wc-badge{height:auto;padding-bottom:4px}
@@ -469,10 +470,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=30"></script>
+  <script src="config.js?v=31"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=31"></script>
   <script>App.boot();</script>
 </body>
 </html>
