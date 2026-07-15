@@ -386,7 +386,7 @@
     /* Layout: grid + panel QR samping (tidak menutup bendera) */
     .vs-body{flex:1;min-height:0;display:flex;gap:14px}
     .vs-grid{flex:1;min-height:0}
-    .vs-side{flex:0 0 196px;display:grid;grid-template-rows:1fr 1fr;gap:12px}
+    .vs-side{flex:0 0 196px;display:grid;grid-template-rows:1fr 1fr;gap:20px}
     .vs-slot{display:flex;align-items:center;justify-content:center;min-height:0}
     .vqr{display:flex;flex-direction:column;align-items:center;gap:2px}
     .vqr-arrow{font-size:2rem;animation:vqrbounce 0.9s infinite;filter:drop-shadow(0 3px 6px rgba(0,0,0,.3))}
@@ -401,6 +401,10 @@
     .vs-foot .wc-badge{flex-direction:column;height:auto;gap:8px}
     .vs-foot .wc-logo{flex:0 0 auto;width:auto;padding:0;background:none;border:0;box-shadow:none}
     .vs-foot .wc-img{max-height:min(15vh,150px);max-width:min(62vw,320px);filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
+    /* Emblem di panel samping (desktop): sedikit diperkecil + diturunkan agar tak terlalu dekat QR */
+    .vs-side .vs-slot-wc{align-items:flex-end}
+    .vs-side .vs-slot-wc .wc-badge{height:auto;padding-bottom:4px}
+    .vs-side .wc-img{max-height:150px}
     .wc-fb{display:none;flex-direction:column;align-items:center;text-align:center;background:#fff;border:3px solid #ffd166;border-radius:18px;padding:14px 18px;box-shadow:0 16px 44px rgba(0,0,0,.30)}
     .wc-ico{font-size:3rem;line-height:1;filter:drop-shadow(0 4px 8px rgba(245,166,35,.5))}
     .wc-t1{font-weight:900;font-size:1.02rem;letter-spacing:.1em;color:var(--astra-dark);margin-top:8px}
@@ -465,10 +469,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=29"></script>
+  <script src="config.js?v=30"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=29"></script>
+  <script src="app.js?v=30"></script>
   <script>App.boot();</script>
 </body>
 </html>

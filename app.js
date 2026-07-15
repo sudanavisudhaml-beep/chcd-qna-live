@@ -857,7 +857,7 @@
     return '<div class="vqr">' +
       '<div class="vqr-arrow">👇</div>' +
       '<div class="vqr-card">' +
-        '<div class="vqr-title">SCAN &amp; VOTE! 📲</div>' +
+        '<div class="vqr-title">SCAN &amp; VOTE!</div>' +
         '<img class="vqr-img" src="' + qr + '" alt="QR Vote" />' +
         '<div class="vqr-sub">Arahkan kamera HP<br/>Kode <b>' + esc(ev.code) + '</b></div>' +
       '</div></div>';
@@ -866,7 +866,7 @@
   function wcBadgeHTML() {
     return '<div class="wc-badge">' +
       '<div class="wc-logo">' +
-        '<img class="wc-img" src="worldcup.png" alt="World Cup 2026" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />' +
+        '<img class="wc-img" src="worldcup.png?v=30" alt="World Cup 2026" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />' +
         '<div class="wc-fb"><span class="wc-ico">🏆</span><span class="wc-t1">WORLD CUP</span><span class="wc-t2">2026</span></div>' +
       '</div>' +
       '<div class="wc-date">⚽ 11 Juni – 19 Juli 2026</div>' +
