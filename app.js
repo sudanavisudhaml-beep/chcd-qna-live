@@ -1187,7 +1187,7 @@
   function mCellHTML(o, col) {
     return '<div class="mcell" id="vq_' + o.oid + '" style="--tc:' + col + '">' +
       '<div class="mflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
-      '<div class="mname">' + esc(o.name) + ' <span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
+      '<div class="mname"><span class="mname-t">' + esc(o.name) + '</span><span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
       '<div class="mbar"><div class="pm-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div></div>' +
       '<div class="mstat"><span class="pm-trend" id="ptr_' + o.oid + '">•</span><span class="mnum" id="vcn_' + o.oid + '">0%</span><span class="mvotes" id="pv_' + o.oid + '">0 suara</span></div>' +
       '</div>';

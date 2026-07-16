@@ -365,16 +365,19 @@
     .mcell::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--tc,#3b82f6)}
     .mcell.leader{border-color:rgba(255,209,102,.6);box-shadow:0 0 0 2px rgba(255,209,102,.35),0 10px 28px rgba(0,0,0,.4)}
     .mflag{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
-    .mname{flex:0 0 auto;font-weight:800;font-size:1.02rem;color:#fff;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;text-align:center;line-height:1.2}
+    /* Nama negara + badge Juara SELALU sebaris (nowrap); nama boleh menyusut, badge tidak */
+    .mname{flex:0 0 auto;width:100%;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:nowrap;line-height:1.15}
+    .mname-t{font-weight:800;font-size:1.5rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
     .mbar{flex:0 0 auto;position:relative;width:100%;height:10px;border-radius:5px;overflow:hidden;
       background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
     .mstat{flex:0 0 auto;display:flex;align-items:baseline;gap:6px}
-    .mnum{font-weight:900;font-size:1.5rem;line-height:1;color:var(--tc,#fff);font-variant-numeric:tabular-nums;text-shadow:0 2px 10px rgba(0,0,0,.4)}
-    .mvotes{font-size:.72rem;color:#9fb2d0;font-weight:700}
+    .mnum{font-weight:900;font-size:2.6rem;line-height:1;color:var(--tc,#fff);font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+    .mvotes{font-size:.85rem;color:#9fb2d0;font-weight:700}
     .mvs{flex:0 0 auto;align-self:center;font-weight:900;font-size:.82rem;letter-spacing:.06em;color:#ffd166;white-space:nowrap;
       background:rgba(255,209,102,.14);border:1px solid rgba(255,209,102,.42);border-radius:999px;padding:6px 8px}
-    .vlead-badge{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:3px 10px;border-radius:999px;
-      font-size:.7rem;font-weight:900;letter-spacing:.03em;background:rgba(255,255,255,.16);color:#eaf0fb;animation:none;white-space:nowrap}
+    /* Badge Juara: sengaja dibuat LEBIH KECIL dari nama negara, tidak ikut menyusut */
+    .vlead-badge{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;margin-left:0;padding:3px 9px;border-radius:999px;
+      font-size:.66rem;font-weight:900;letter-spacing:.02em;background:rgba(255,255,255,.16);color:#eaf0fb;animation:none;white-space:nowrap}
     .vlead-badge.win{background:linear-gradient(135deg,#ffe487,#f5a623);color:#5b3b00;box-shadow:0 2px 10px rgba(245,166,35,.5)}
     /* Form bracket: tebak tiap duel */
     .bform-head{font-weight:900;font-size:1rem;letter-spacing:.04em;text-transform:uppercase;color:var(--astra-dark);margin-bottom:12px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -415,11 +418,13 @@
       .vs-pm .mrow{flex:0 0 auto;min-height:210px;gap:5px;padding:7px 8px 9px;border-radius:14px}
       .vs-pm .mcells{gap:6px}
       .vs-pm .mcell{padding:6px 5px 7px;border-radius:12px;gap:4px}
-      .vs-pm .mname{font-size:.82rem} .vs-pm .mnum{font-size:1.15rem} .vs-pm .mvotes{font-size:.6rem}
+      .vs-pm .mname{gap:4px} .vs-pm .mname-t{font-size:.92rem}
+      .vs-pm .mnum{font-size:1.45rem} .vs-pm .mvotes{font-size:.6rem}
       .vs-pm .mbar{height:8px}
       .vs-pm .mvs{font-size:.6rem;padding:4px 5px}
       .vs-pm .bkt-title{font-size:.74rem} .vs-pm .bkt-sub{font-size:.58rem}
-      .vs-pm .vlead-badge{font-size:.55rem;padding:2px 6px;margin-left:3px}
+      /* badge dikecilkan agar tetap sebaris dengan nama negara terpanjang (Argentina) */
+      .vs-pm .vlead-badge{font-size:.46rem;padding:2px 5px;gap:2px}
       .vs-pm .pm-rank{width:32px;height:32px;font-size:1rem}
       .vs-pm .pm-flag{flex-basis:70px}
       .vs-pm .pm-name{font-size:1rem} .vs-pm .pm-bar{height:15px} .vs-pm .pm-num{font-size:1.3rem}
@@ -526,10 +531,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=38"></script>
+  <script src="config.js?v=39"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=38"></script>
+  <script src="app.js?v=39"></script>
   <script>App.boot();</script>
 </body>
 </html>
