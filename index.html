@@ -311,11 +311,26 @@
     @keyframes pmfloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4vw,-3vw) scale(1.1)}66%{transform:translate(-3vw,3vw) scale(.95)}}
     .vs-pm>*:not(.pm-orbs){position:relative;z-index:1}
     .vs-pm .vs-top{background:rgba(255,255,255,.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:8px 14px;margin-bottom:12px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-    /* Logo QUERY di layar live: TANPA kotak glass. PNG-nya biru gelap → dibuat putih (knockout)
-       agar tajam & kontras di panel gelap; blur backdrop dihapus supaya tidak melembutkan logo. */
-    .vs-pm .vs-logobox{display:inline-flex;padding:0;border:0;border-radius:0;
+    /* Logo QUERY di layar live: TANPA kotak glass. Pakai aset query-logo-white.png —
+       sudah putih penuh + alpha subtitle "Suara Insan Astra" dinaikkan (aslinya cuma 25% opacity),
+       jadi tak perlu filter brightness/invert lagi. */
+    .vs-pm .vs-logobox{position:relative;display:inline-flex;padding:0;border:0;border-radius:0;
       background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-    .vs-pm .vs-logo{height:76px;filter:brightness(0) invert(1) drop-shadow(0 3px 10px rgba(0,0,0,.55))}
+    .vs-pm .vs-logo{height:76px;position:relative;z-index:1;filter:drop-shadow(0 3px 10px rgba(0,0,0,.55))}
+    /* Ripple "sonar" memancar dari ikon Q (pusat Q terukur: 19.5% dari kiri, 51% dari atas, Ø≈56% tinggi logo).
+       Ditaruh sebelum <img> di DOM + logo z-index:1 → ring memancar dari BELAKANG logo, tidak menabrak huruf. */
+    .qripple{position:absolute;inset:0;pointer-events:none}
+    .qripple i{position:absolute;left:19.5%;top:51%;height:56%;aspect-ratio:1;border-radius:50%;
+      border:2px solid rgba(255,255,255,.9);opacity:0;transform:translate(-50%,-50%) scale(.45);
+      animation:qping 2.8s cubic-bezier(.2,.6,.3,1) infinite}
+    .qripple i:nth-child(2){animation-delay:.95s}
+    .qripple i:nth-child(3){animation-delay:1.9s}
+    @keyframes qping{
+      0%{transform:translate(-50%,-50%) scale(.45);opacity:0}
+      14%{opacity:.85}
+      100%{transform:translate(-50%,-50%) scale(2.5);opacity:0;border-width:1px}
+    }
+    @media(prefers-reduced-motion:reduce){ .qripple{display:none} }
     .vs-pm .vs-title{color:#fff;font-size:1.4rem}
     .vs-pm .vs-total{color:#9fb2d0} .vs-pm .vs-total span{color:#fff;font-size:1.3rem}
     .vs-pm .vs-btn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.16);color:#fff}
@@ -532,10 +547,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=42"></script>
+  <script src="config.js?v=43"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=43"></script>
   <script>App.boot();</script>
 </body>
 </html>
