@@ -423,8 +423,9 @@
       .vs-pm .mbar{height:8px}
       .vs-pm .mvs{font-size:.6rem;padding:4px 5px}
       .vs-pm .bkt-title{font-size:.74rem} .vs-pm .bkt-sub{font-size:.58rem}
-      /* badge dikecilkan agar tetap sebaris dengan nama negara terpanjang (Argentina) */
-      .vs-pm .vlead-badge{font-size:.46rem;padding:2px 5px;gap:2px}
+      /* badge dikecilkan agar tetap sebaris dengan nama negara terpanjang ("Argentina").
+         .5rem = batas terukur: lebih besar dari ini nama mulai terpotong "…" */
+      .vs-pm .vlead-badge{font-size:.5rem;padding:2px 5px;gap:2px}
       .vs-pm .pm-rank{width:32px;height:32px;font-size:1rem}
       .vs-pm .pm-flag{flex-basis:70px}
       .vs-pm .pm-name{font-size:1rem} .vs-pm .pm-bar{height:15px} .vs-pm .pm-num{font-size:1.3rem}
@@ -531,10 +532,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=39"></script>
+  <script src="config.js?v=40"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=39"></script>
+  <script src="app.js?v=40"></script>
   <script>App.boot();</script>
 </body>
 </html>
