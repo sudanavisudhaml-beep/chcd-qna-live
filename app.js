@@ -1217,7 +1217,7 @@
         '<div class="pm-orbs"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="o4"></i></div>' +
         '<div class="vs-top">' +
           '<span class="vs-logobox"><img class="vs-logo" src="query-logo.png" alt="QUERY" onerror="this.style.display=\'none\'" /></span>' +
-          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '<span class="vs-wc">⚽ World Cup 2026 · Special Edition</span></div></div>' +
+          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '</div></div>' +
           '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> ' + (bracket ? 'pemilih' : 'vote') + '</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
         '</div>' +
         '<div class="vs-body">' +
