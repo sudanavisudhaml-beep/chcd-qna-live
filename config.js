@@ -17,7 +17,7 @@ window.APP = {
   // ---------- VERSI APLIKASI ----------
   // Ditampilkan di footer & layar live. Riwayat lengkap tiap versi ada di CHANGELOG.md,
   // dan tiap versi ditandai git tag (mis. v2.1) → bisa dikembalikan persis kapan saja.
-  APP_VERSION: "2.1",
+  APP_VERSION: "2.2",
 
   firebaseConfig: {
     apiKey: "AIzaSyADeuHLNMAs6DoeCMUClXQ77Hc8fs0IGac",

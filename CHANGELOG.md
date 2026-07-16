@@ -33,7 +33,8 @@ git push
 
 | Versi | Tanggal | Commit | Isi |
 |---|---|---|---|
-| **v2.1** | 2026-07-16 | `b5224fc` | **(TERKINI)** Layar live kembali ke **kuadran 2×2 gaya Match**: baris atas Final (Spain vs Argentina), baris bawah Perebutan Juara 3 (France vs England), pembatas **VS**, bar chart diperpendek (10px). |
+| **v2.2** | 2026-07-16 | `52f4394` | **(TERKINI)** **Sistem versi**: `APP_VERSION` di `config.js`, badge versi tampil di footer & layar live, `CHANGELOG.md` ini, dan **git tag untuk tiap versi** → versi mana pun bisa dikembalikan persis. |
+| **v2.1** | 2026-07-16 | `b5224fc` | Layar live kembali ke **kuadran 2×2 gaya Match**: baris atas Final (Spain vs Argentina), baris bawah Perebutan Juara 3 (France vs England), pembatas **VS**, bar chart diperpendek (10px). |
 | **v2.0** | 2026-07-16 | `dd78653` | **Bracket/prediksi 2 duel.** France masuk lagi (4 tim). Tiap orang menebak pemenang Final **dan** pemenang Juara 3 (2 pilihan, 1 submit). Badge 🏆Juara 1 / 🥈Juara 2 / 🥉Juara 3, % dihitung per-duel. CSV berisi kedua prediksi + klasemen. Pill "World Cup Special Edition" dihapus (`9a07f12`). |
 | **v1.9.1** | 2026-07-15 | `0e66ddf` | **Fix bug hitungan dobel** — `increment()` di dalam transaction bisa terhitung 2× saat retry; diganti nilai absolut dari hasil read (idempoten). |
 | **v1.9** | 2026-07-15 | `bf8fdda` | **Vote berbasis identitas.** Nama/alias **wajib**; anti vote-ganda **di server** (Firestore transaction) → 1 nama = 1 suara walau ganti HP. Simpan alias+pilihan+waktu (`voterAlias`). Tombol **📥 export CSV** untuk host. Reset ikut menghapus daftar nama. |
