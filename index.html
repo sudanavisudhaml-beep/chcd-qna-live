@@ -345,18 +345,30 @@
     .pm-trend.down{color:#f43f5e;text-shadow:0 0 10px rgba(244,63,94,.5)}
     .pm-num{font-weight:900;font-size:2.4rem;line-height:1;color:var(--tc,#fff);font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.4)}
     .pm-votes{font-size:.82rem;color:#9fb2d0;font-weight:700;margin-top:4px}
-    /* ===== Bracket / Kuadran (Final + Perebutan Juara 3) ===== */
-    .bkt-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
-    .bkt{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:9px 12px 12px;border-radius:20px;
+    /* ===== Kuadran gaya MATCH (2×2): baris atas = Final, baris bawah = Perebutan Juara 3 ===== */
+    .mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+    .mrow{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px;padding:8px 12px 11px;border-radius:20px;
       background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 26px rgba(0,0,0,.3)}
-    .bkt-final{border-color:rgba(255,209,102,.42)}
-    .bkt-head{flex:0 0 auto;display:flex;align-items:baseline;gap:10px;padding:0 4px;flex-wrap:wrap}
-    .bkt-title{font-weight:900;font-size:1rem;letter-spacing:.07em;text-transform:uppercase;color:#fff}
+    .mrow.bkt-final{border-color:rgba(255,209,102,.42)}
+    .mhead{flex:0 0 auto;display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap}
+    .bkt-title{font-weight:900;font-size:.95rem;letter-spacing:.08em;text-transform:uppercase;color:#fff}
     .bkt-final .bkt-title{color:#ffe487}
-    .bkt-sub{font-size:.72rem;font-weight:800;color:#ffd166;letter-spacing:.02em}
-    .bkt-rows{flex:1;min-height:0;display:flex;flex-direction:column;gap:9px}
-    .bkt .pm-rank{display:none}
-    .bkt .pm-row{padding-left:18px}
+    .bkt-sub{font-size:.7rem;font-weight:800;color:#ffd166;letter-spacing:.02em}
+    .mcells{flex:1;min-height:0;display:flex;align-items:stretch;gap:10px}
+    .mcell{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+      padding:8px 8px 9px;border-radius:16px;position:relative;overflow:hidden;transition:box-shadow .3s,border-color .3s;
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+    .mcell::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--tc,#3b82f6)}
+    .mcell.leader{border-color:rgba(255,209,102,.6);box-shadow:0 0 0 2px rgba(255,209,102,.35),0 10px 28px rgba(0,0,0,.4)}
+    .mflag{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+    .mname{flex:0 0 auto;font-weight:800;font-size:1.02rem;color:#fff;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;text-align:center;line-height:1.2}
+    .mbar{flex:0 0 auto;position:relative;width:100%;height:10px;border-radius:5px;overflow:hidden;
+      background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
+    .mstat{flex:0 0 auto;display:flex;align-items:baseline;gap:6px}
+    .mnum{font-weight:900;font-size:1.5rem;line-height:1;color:var(--tc,#fff);font-variant-numeric:tabular-nums;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+    .mvotes{font-size:.72rem;color:#9fb2d0;font-weight:700}
+    .mvs{flex:0 0 auto;align-self:center;font-weight:900;font-size:.82rem;letter-spacing:.06em;color:#ffd166;white-space:nowrap;
+      background:rgba(255,209,102,.14);border:1px solid rgba(255,209,102,.42);border-radius:999px;padding:6px 8px}
     .vlead-badge{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:3px 10px;border-radius:999px;
       font-size:.7rem;font-weight:900;letter-spacing:.03em;background:rgba(255,255,255,.16);color:#eaf0fb;animation:none;white-space:nowrap}
     .vlead-badge.win{background:linear-gradient(135deg,#ffe487,#f5a623);color:#5b3b00;box-shadow:0 2px 10px rgba(245,166,35,.5)}
@@ -394,6 +406,16 @@
       .vs-pm .vs-body{flex-direction:column;gap:10px}
       .vs-pm .pm-list{flex:0 0 auto;gap:9px}
       .vs-pm .pm-row{flex:0 0 auto;min-height:86px;gap:9px;padding:8px 10px 8px 7px;border-radius:14px}
+      /* Kuadran match di mobile: tinggi pasti agar bendera pixel tetap terukur saat page bisa scroll */
+      .vs-pm .mgrid{flex:0 0 auto;gap:9px}
+      .vs-pm .mrow{flex:0 0 auto;min-height:210px;gap:5px;padding:7px 8px 9px;border-radius:14px}
+      .vs-pm .mcells{gap:6px}
+      .vs-pm .mcell{padding:6px 5px 7px;border-radius:12px;gap:4px}
+      .vs-pm .mname{font-size:.82rem} .vs-pm .mnum{font-size:1.15rem} .vs-pm .mvotes{font-size:.6rem}
+      .vs-pm .mbar{height:8px}
+      .vs-pm .mvs{font-size:.6rem;padding:4px 5px}
+      .vs-pm .bkt-title{font-size:.74rem} .vs-pm .bkt-sub{font-size:.58rem}
+      .vs-pm .vlead-badge{font-size:.55rem;padding:2px 6px;margin-left:3px}
       .vs-pm .pm-rank{width:32px;height:32px;font-size:1rem}
       .vs-pm .pm-flag{flex-basis:70px}
       .vs-pm .pm-name{font-size:1rem} .vs-pm .pm-bar{height:15px} .vs-pm .pm-num{font-size:1.3rem}
@@ -500,10 +522,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=35"></script>
+  <script src="config.js?v=36"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=36"></script>
   <script>App.boot();</script>
 </body>
 </html>

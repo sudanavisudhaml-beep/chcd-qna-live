@@ -1183,6 +1183,15 @@
       '<div class="pm-pct"><div class="pm-numrow"><span class="pm-trend" id="ptr_' + o.oid + '">•</span><span class="pm-num" id="vcn_' + o.oid + '">0%</span></div><div class="pm-votes" id="pv_' + o.oid + '">0 vote</div></div>' +
       '</div>';
   }
+  // Kartu tim untuk tampilan Match (kuadran): bendera pixel besar, nama+badge, bar pendek, %
+  function mCellHTML(o, col) {
+    return '<div class="mcell" id="vq_' + o.oid + '" style="--tc:' + col + '">' +
+      '<div class="mflag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
+      '<div class="mname">' + esc(o.name) + ' <span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
+      '<div class="mbar"><div class="pm-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div></div>' +
+      '<div class="mstat"><span class="pm-trend" id="ptr_' + o.oid + '">•</span><span class="mnum" id="vcn_' + o.oid + '">0%</span><span class="mvotes" id="pv_' + o.oid + '">0 suara</span></div>' +
+      '</div>';
+  }
   function buildVoteLiveShell(my) {
     var ev = sess.event, opts = ev.options || [], bracket = isBracket();
     var pill;
@@ -1197,12 +1206,12 @@
     }
     var bodyInner;
     if (bracket) {
-      bodyInner = '<div class="pm-list bkt-list">' + evBrackets().map(function (b, bi) {
+      bodyInner = '<div class="mgrid">' + evBrackets().map(function (b, bi) {
         var teams = [optById(b.a), optById(b.b)].filter(Boolean);
-        var trows = teams.map(function (o, ti) { return pmRowHTML(o, TEAM_COLORS[(bi * 2 + ti) % TEAM_COLORS.length]); }).join("");
-        return '<div class="bkt bkt-' + esc(b.bid) + '"><div class="bkt-head"><span class="bkt-title">' + esc(b.title) + '</span>' +
+        var cells = teams.map(function (o, ti) { return mCellHTML(o, TEAM_COLORS[(bi * 2 + ti) % TEAM_COLORS.length]); }).join('<div class="mvs">VS</div>');
+        return '<div class="mrow bkt-' + esc(b.bid) + '"><div class="mhead"><span class="bkt-title">' + esc(b.title) + '</span>' +
           (b.sub ? '<span class="bkt-sub">' + esc(b.sub) + '</span>' : '') + '</div>' +
-          '<div class="bkt-rows">' + trows + '</div></div>';
+          '<div class="mcells">' + cells + '</div></div>';
       }).join("") + '</div>';
     } else {
       bodyInner = '<div class="pm-list">' + opts.map(function (o, i) { return pmRowHTML(o, TEAM_COLORS[i % TEAM_COLORS.length]); }).join("") + '</div>';
