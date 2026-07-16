@@ -145,6 +145,24 @@
       });
     });
   }
+  // Rekam prediksi bracket (2 duel) via TRANSACTION: 1 nama 1 submit; tiap pilihan +1 (nilai absolut, idempoten)
+  function voteForBracket(code, picks, dev, round, ak, aname) {
+    var ref = db.collection("events").doc(code), ts = Date.now();
+    return db.runTransaction(function (tx) {
+      return tx.get(ref).then(function (doc) {
+        var d = (doc.exists && doc.data()) || {};
+        var va = d.voterAlias || {};
+        if (ak && va[ak]) { var e = new Error("dup-alias"); e.dupAlias = va[ak]; throw e; }
+        var vc = d.voteCounts || {}, u = {}, seen = {};
+        var firstOid = null;
+        Object.keys(picks).forEach(function (bid) { var oid = picks[bid]; if (!firstOid) firstOid = oid; if (!seen[oid]) { u["voteCounts." + oid] = (vc[oid] || 0) + 1; seen[oid] = 1; } });
+        u.lastVote = { oid: firstOid, ts: ts };
+        if (dev) u["voters." + dev] = round;
+        if (ak) u["voterAlias." + ak] = { n: aname, p: picks, t: ts };
+        tx.update(ref, u);
+      });
+    });
+  }
   function subscribeEvent(code, cb) { return db.collection("events").doc(code).onSnapshot(function (d) { if (d.exists) cb(d.data()); }); }
 
   /* ---------- DB: responses (subkoleksi survei per event) ---------- */
@@ -970,31 +988,37 @@
     var t = builderVote.options[i]; builderVote.options[i] = builderVote.options[j]; builderVote.options[j] = t; persistVote(renderTeamList);
   }
 
-  // Vote perangkat ini — dicek dari server (voters map, keyed device-id cookie) + fallback lokal.
-  // Hangus saat host reset (voteRound berubah).
+  // ---- Mode bracket (dua duel: Final + Perebutan Juara 3) ----
+  function evBrackets() { return (sess.event && sess.event.brackets) || []; }
+  function isBracket() { return evBrackets().length > 0; }
+  function optById(oid) { var opts = (sess.event && sess.event.options) || []; for (var i = 0; i < opts.length; i++) if (opts[i].oid === oid) return opts[i]; return null; }
+  var formPicks = {};
+
+  // Vote orang/perangkat ini — dicek dari server (voterAlias + voters map) + fallback lokal. Hangus saat host reset.
+  // Return: {round, oid?, p?:{bid:oid}, alias?} bila sudah vote, atau null.
   function getMyVote() {
     var round = (sess.event && sess.event.voteRound) || "";
     var voters = (sess.event && sess.event.voters) || {};
+    var va = (sess.event && sess.event.voterAlias) || {};
     var dev = getDeviceId();
-    if (round && voters[dev] === round) {
-      var oid = null; try { var r0 = JSON.parse(localStorage.getItem("query_vote_" + sess.code)); oid = r0 && r0.oid; } catch (e) {}
-      if (!oid) { try { var rc = JSON.parse(getCookie("qv_" + sess.code) || "null"); oid = rc && rc.oid; } catch (e) {} }
-      return { oid: oid, round: round };
+    function fromLocal() {
+      var raw = null; try { raw = localStorage.getItem("query_vote_" + sess.code); } catch (e) {} if (!raw) raw = getCookie("qv_" + sess.code);
+      if (raw) { try { var v = JSON.parse(raw); if (v && typeof v === "object") return v; } catch (e) {} }
+      return null;
     }
-    var raw = null; try { raw = localStorage.getItem("query_vote_" + sess.code); } catch (e) {} if (!raw) raw = getCookie("qv_" + sess.code);
-    if (raw) { var v; try { v = JSON.parse(raw); } catch (e) { v = null; }
-      if (v && typeof v === "object") {
-        if (round && v.round !== round) { try { localStorage.removeItem("query_vote_" + sess.code); } catch (e) {} return null; }
-        return v;
-      }
-    }
-    // Kenali lewat nama/alias yang tersimpan (bertahan walau catatan vote lokal terhapus)
-    try { var ak = vAliasKey(localStorage.getItem("query_alias_" + sess.code)); var va = (sess.event && sess.event.voterAlias) || {}; if (ak && va[ak]) return { oid: va[ak].o, round: round, alias: ak }; } catch (e) {}
+    // 1) Dikenali lewat nama/alias tersimpan (paling otoritatif — record ada di server)
+    var ak = ""; try { ak = vAliasKey(localStorage.getItem("query_alias_" + sess.code)); } catch (e) {}
+    if (ak && va[ak]) { var r = va[ak]; return { round: round, alias: ak, oid: r.o || null, p: r.p || null }; }
+    // 2) Perangkat ini terkunci babak ini
+    if (round && voters[dev] === round) { var lv = fromLocal() || {}; return { round: round, oid: lv.oid || null, p: lv.p || null, alias: lv.alias }; }
+    // 3) Catatan lokal babak ini
+    var lv2 = fromLocal();
+    if (lv2) { if (round && lv2.round !== round) { try { localStorage.removeItem("query_vote_" + sess.code); } catch (e) {} return null; } return lv2; }
     return null;
   }
   function renderVoteSession() {
     var my = getMyVote();
-    if (sess.isOwner || my) { buildVoteLiveShell(my ? my.oid : null); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); handleLastVote(d.lastVote); }); }
+    if (sess.isOwner || my) { buildVoteLiveShell(my || null); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updateVoteLive(d.voteCounts || {}); handleLastVote(d.lastVote); }); }
     else renderVoteForm();
   }
   function resetVote() {
@@ -1004,9 +1028,69 @@
     (sess.event.options || []).forEach(function (o) { u["voteCounts." + o.oid] = 0; });
     db.collection("events").doc(sess.code).update(u).then(function () { toast("Vote di-reset — mulai dari awal ✓"); }).catch(function () { toast("Gagal reset"); });
   }
+  function aliasCardHTML(savedAlias) {
+    return '<div class="card" style="margin-bottom:14px">' +
+      '<label class="fld">Nama / Alias Anda <span style="color:#e0245e">*</span></label>' +
+      '<input type="text" id="vAlias" maxlength="40" autocomplete="off" placeholder="mis. Budi · SVI · Meja 3" value="' + esc(savedAlias) + '" oninput="var e=document.getElementById(\'vAliasErr\');if(e)e.style.display=\'none\';this.style.borderColor=\'\'" />' +
+      '<div id="vAliasErr" style="display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin-top:6px">Silahkan isi Nama/Alias Anda dulu</div>' +
+      '<div class="hintline" style="margin-top:8px">1 nama = 1 kali submit. Nama yang sudah vote tidak bisa vote lagi.</div>' +
+    '</div>';
+  }
+  // Form bracket: tebak pemenang tiap duel (Final + Perebutan Juara 3)
+  function renderBracketForm() {
+    var ev = sess.event, brs = evBrackets();
+    var savedAlias = ""; try { savedAlias = localStorage.getItem("query_alias_" + sess.code) || ""; } catch (e) {}
+    formPicks = {};
+    var groups = brs.map(function (b) {
+      var teams = [optById(b.a), optById(b.b)].filter(Boolean);
+      var cards = teams.map(function (o) {
+        return '<button class="bteam" id="bt_' + b.bid + '_' + o.oid + '" onclick="QUERY.pickBracket(\'' + b.bid + '\',\'' + o.oid + '\')">' +
+          '<img class="bteam-flag" src="' + flagUrl(o.code) + '" onerror="this.style.visibility=\'hidden\'" />' +
+          '<span class="bteam-name">' + esc(o.name) + '</span><span class="bteam-tick">✓</span></button>';
+      }).join('<span class="bvs">VS</span>');
+      return '<div class="card bform" id="bform_' + b.bid + '"><div class="bform-head">' + esc(b.title) +
+        (b.sub ? ' <span class="bform-sub">' + esc(b.sub) + '</span>' : '') + '</div>' +
+        '<div class="bteam-row">' + cards + '</div></div>';
+    }).join("");
+    view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Tebak Juara — 2 Duel") +
+      aliasCardHTML(savedAlias) + groups +
+      '<button class="btn block" style="margin-top:6px;font-size:1.05rem;padding:15px" onclick="QUERY.submitBracket()">🎉 Kirim Prediksi</button>' +
+      '<p class="muted center" style="margin-top:12px;font-size:.85rem">Pilih pemenang di <b>kedua</b> duel, lalu kirim. Cukup sekali.</p></div>';
+  }
+  function pickBracket(bid, oid) {
+    formPicks[bid] = oid;
+    var box = $("bform_" + bid); if (box) { box.classList.remove("err"); [].slice.call(box.querySelectorAll(".bteam")).forEach(function (b) { b.classList.remove("sel"); }); }
+    var el = $("bt_" + bid + "_" + oid); if (el) el.classList.add("sel");
+  }
+  function submitBracket() {
+    if (sess._voting) return;
+    var inp = $("vAlias"), aliasRaw = ((inp && inp.value) || "").trim(), ak = vAliasKey(aliasRaw);
+    if (!ak) { var er = $("vAliasErr"); if (er) er.style.display = "block"; if (inp) { inp.style.borderColor = "#e0245e"; inp.focus(); } toast("Isi Nama/Alias Anda dulu ✍️"); return; }
+    var brs = evBrackets(), picks = {}, missing = null;
+    brs.forEach(function (b) { if (formPicks[b.bid]) picks[b.bid] = formPicks[b.bid]; else if (!missing) missing = b; });
+    if (missing) { var mb = $("bform_" + missing.bid); if (mb) { mb.classList.add("err"); mb.scrollIntoView({ behavior: "smooth", block: "center" }); } toast("Pilih pemenang " + missing.title + " dulu"); return; }
+    var round = (sess.event && sess.event.voteRound) || "";
+    if (getMyVote()) { toast("Perangkat ini sudah vote 🙌"); renderVoteSession(); return; }
+    sess._voting = true; ensureAudio();
+    var dev = getDeviceId();
+    try { localStorage.setItem("query_alias_" + sess.code, aliasRaw); } catch (e) {}
+    voteForBracket(sess.code, picks, dev, round, ak, aliasRaw).then(function () {
+      var rec = JSON.stringify({ p: picks, round: round, alias: ak });
+      try { localStorage.setItem("query_vote_" + sess.code, rec); } catch (e) {} setCookie("qv_" + sess.code, rec);
+      toast("Prediksi terkirim! 🎉"); renderVoteSession();
+    }).catch(function (err) {
+      sess._voting = false;
+      if (err && err.message === "dup-alias") {
+        var prev = err.dupAlias || {}; var rec = JSON.stringify({ p: prev.p || picks, round: round, alias: ak });
+        try { localStorage.setItem("query_vote_" + sess.code, rec); } catch (e) {} setCookie("qv_" + sess.code, rec);
+        toast("Nama \"" + aliasRaw + "\" sudah vote 🙌 — tidak bisa 2×"); renderVoteSession();
+      } else { toast("Gagal kirim, coba lagi"); }
+    });
+  }
   function renderVoteForm() {
     var ev = sess.event, opts = ev.options || [];
     if (!opts.length) { view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote") + '<div class="card center">Belum ada opsi untuk dipilih.</div></div>'; return; }
+    if (isBracket()) { renderBracketForm(); return; }
     var savedAlias = ""; try { savedAlias = localStorage.getItem("query_alias_" + sess.code) || ""; } catch (e) {}
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Vote — Pilih Tim Anda") +
       '<div class="card" style="margin-bottom:14px">' +
@@ -1040,20 +1124,41 @@
       } else { toast("Gagal vote, coba lagi"); }
     });
   }
+  function downloadCSV(rows, fname) {
+    var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = fname; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+    toast("Hasil diunduh 📥");
+  }
   // Unduh hasil vote (nama/alias + pilihan + waktu) sebagai CSV — untuk host
   function exportVotes() {
     var ev = sess.event, va = (ev && ev.voterAlias) || {}, opts = (ev && ev.options) || [];
     var nameOf = {}; opts.forEach(function (o) { nameOf[o.oid] = o.name; });
     var arr = Object.keys(va).map(function (k) { return va[k]; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
-    var rows = [["No", "Nama/Alias", "Pilihan", "Waktu"]];
-    arr.forEach(function (r, i) { rows.push([i + 1, r.n || "", nameOf[r.o] || r.o || "", r.t ? new Date(r.t).toLocaleString("id-ID") : ""]); });
-    rows.push([""]); rows.push(["REKAP SUARA", "", "", ""]);
-    opts.forEach(function (o) { rows.push(["", o.name, ((ev.voteCounts || {})[o.oid]) || 0, ""]); });
-    rows.push(["", "TOTAL PEMILIH", arr.length, ""]);
-    var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
-    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = "hasil-vote-" + ev.code + ".csv"; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
-    toast("Hasil vote diunduh 📥");
+    if (isBracket()) {
+      var brs = evBrackets(), counts = ev.voteCounts || {};
+      var rows = [["No", "Nama/Alias"].concat(brs.map(function (b) { return "Prediksi: " + b.title; })).concat(["Waktu"])];
+      arr.forEach(function (r, i) {
+        var row = [i + 1, r.n || ""]; brs.forEach(function (b) { row.push(nameOf[(r.p || {})[b.bid]] || ""); }); row.push(r.t ? new Date(r.t).toLocaleString("id-ID") : ""); rows.push(row);
+      });
+      rows.push([""]); rows.push(["REKAP TIAP DUEL"]);
+      brs.forEach(function (b) {
+        var ca = counts[b.a] || 0, cb = counts[b.b] || 0;
+        rows.push([b.title, nameOf[b.a] + ": " + ca, nameOf[b.b] + ": " + cb, (ca === cb ? "SERI" : "Unggul: " + nameOf[ca > cb ? b.a : b.b])]);
+      });
+      rows.push([""]); rows.push(["HASIL SEMENTARA"]);
+      var f = brs[0], t = brs[1];
+      if (f) { var fa = counts[f.a] || 0, fb = counts[f.b] || 0; if (fa !== fb) { rows.push(["Juara 1", nameOf[fa > fb ? f.a : f.b]]); rows.push(["Juara 2", nameOf[fa > fb ? f.b : f.a]]); } }
+      if (t) { var ta = counts[t.a] || 0, tb = counts[t.b] || 0; if (ta !== tb) rows.push(["Juara 3", nameOf[ta > tb ? t.a : t.b]]); }
+      rows.push(["Total Pemilih", arr.length]);
+      downloadCSV(rows, "hasil-prediksi-" + ev.code + ".csv"); return;
+    }
+    var rows2 = [["No", "Nama/Alias", "Pilihan", "Waktu"]];
+    arr.forEach(function (r, i) { rows2.push([i + 1, r.n || "", nameOf[r.o] || r.o || "", r.t ? new Date(r.t).toLocaleString("id-ID") : ""]); });
+    rows2.push([""]); rows2.push(["REKAP SUARA", "", "", ""]);
+    opts.forEach(function (o) { rows2.push(["", o.name, ((ev.voteCounts || {})[o.oid]) || 0, ""]); });
+    rows2.push(["", "TOTAL PEMILIH", arr.length, ""]);
+    downloadCSV(rows2, "hasil-vote-" + ev.code + ".csv");
   }
   // Grid pixel: 100 sel (10×10), urutan reveal acak-deterministik
   var PXN = 100;
@@ -1069,22 +1174,39 @@
     return '<div class="pxflag" id="pff_' + oid + '"><div class="pxgrid" id="pf_' + oid + '">' + cells + '</div></div>';
   }
   var TEAM_COLORS = ["#f43f5e", "#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#06b6d4"];
-  function buildVoteLiveShell(votedOid) {
-    var ev = sess.event, opts = ev.options || [];
-    var mine = votedOid ? opts.filter(function (o) { return o.oid === votedOid; })[0] : null;
-    var pill = sess.isOwner
-      ? '<span class="live-pill vs-pill"><span class="dot"></span> Live</span>'
-      : (mine ? '<span class="live-pill vs-pill">✅ Pilihan Anda: ' + esc(mine.name) + '</span>' : '');
-    var rows = opts.map(function (o, i) {
-      var col = TEAM_COLORS[i % TEAM_COLORS.length];
-      return '<div class="pm-row" id="vq_' + o.oid + '" style="--tc:' + col + '">' +
-        '<div class="pm-rank" id="prk_' + o.oid + '">' + (i + 1) + '</div>' +
-        '<div class="pm-flag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
-        '<div class="pm-info"><div class="pm-name">' + esc(o.name) + ' <span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
-        '<div class="pm-bar"><div class="pm-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div></div></div>' +
-        '<div class="pm-pct"><div class="pm-numrow"><span class="pm-trend" id="ptr_' + o.oid + '">•</span><span class="pm-num" id="vcn_' + o.oid + '">0%</span></div><div class="pm-votes" id="pv_' + o.oid + '">0 vote</div></div>' +
-        '</div>';
-    }).join("");
+  function pmRowHTML(o, col) {
+    return '<div class="pm-row" id="vq_' + o.oid + '" style="--tc:' + col + '">' +
+      '<div class="pm-rank" id="prk_' + o.oid + '">·</div>' +
+      '<div class="pm-flag">' + pxGridHTML(o.oid, flagUrl(o.code)) + '</div>' +
+      '<div class="pm-info"><div class="pm-name">' + esc(o.name) + ' <span class="vlead" id="vld_' + o.oid + '">🏆</span></div>' +
+      '<div class="pm-bar"><div class="pm-fill" id="vpf_' + o.oid + '"><i class="vprog-wipe"></i></div></div></div>' +
+      '<div class="pm-pct"><div class="pm-numrow"><span class="pm-trend" id="ptr_' + o.oid + '">•</span><span class="pm-num" id="vcn_' + o.oid + '">0%</span></div><div class="pm-votes" id="pv_' + o.oid + '">0 vote</div></div>' +
+      '</div>';
+  }
+  function buildVoteLiveShell(my) {
+    var ev = sess.event, opts = ev.options || [], bracket = isBracket();
+    var pill;
+    if (sess.isOwner) pill = '<span class="live-pill vs-pill"><span class="dot"></span> Live</span>';
+    else if (bracket) {
+      var picks = (my && my.p) || {};
+      var names = evBrackets().map(function (b) { var o = optById(picks[b.bid]); return o ? esc(o.name) : null; }).filter(Boolean);
+      pill = names.length ? '<span class="live-pill vs-pill">✅ Prediksi Anda: ' + names.join(" · ") + '</span>' : '';
+    } else {
+      var mine = (my && my.oid) ? optById(my.oid) : null;
+      pill = mine ? '<span class="live-pill vs-pill">✅ Pilihan Anda: ' + esc(mine.name) + '</span>' : '';
+    }
+    var bodyInner;
+    if (bracket) {
+      bodyInner = '<div class="pm-list bkt-list">' + evBrackets().map(function (b, bi) {
+        var teams = [optById(b.a), optById(b.b)].filter(Boolean);
+        var trows = teams.map(function (o, ti) { return pmRowHTML(o, TEAM_COLORS[(bi * 2 + ti) % TEAM_COLORS.length]); }).join("");
+        return '<div class="bkt bkt-' + esc(b.bid) + '"><div class="bkt-head"><span class="bkt-title">' + esc(b.title) + '</span>' +
+          (b.sub ? '<span class="bkt-sub">' + esc(b.sub) + '</span>' : '') + '</div>' +
+          '<div class="bkt-rows">' + trows + '</div></div>';
+      }).join("") + '</div>';
+    } else {
+      bodyInner = '<div class="pm-list">' + opts.map(function (o, i) { return pmRowHTML(o, TEAM_COLORS[i % TEAM_COLORS.length]); }).join("") + '</div>';
+    }
     var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
       (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
         '<button class="vs-btn" title="Unduh hasil (CSV: nama + pilihan)" onclick="QUERY.exportVotes()">📥</button>' +
@@ -1096,10 +1218,10 @@
         '<div class="vs-top">' +
           '<span class="vs-logobox"><img class="vs-logo" src="query-logo.png" alt="QUERY" onerror="this.style.display=\'none\'" /></span>' +
           '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '<span class="vs-wc">⚽ World Cup 2026 · Special Edition</span></div></div>' +
-          '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> vote</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
+          '<div class="vs-right"><div class="vs-total"><span id="vtotal">0</span> ' + (bracket ? 'pemilih' : 'vote') + '</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
         '</div>' +
         '<div class="vs-body">' +
-          '<div class="pm-list">' + rows + '</div>' +
+          bodyInner +
           (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot vs-slot-wc">' + wcBadgeHTML() + '</div></aside>' : '') +
         '</div>' +
         '<div class="vs-foot">' + wcBadgeHTML() + '</div>' +
@@ -1129,6 +1251,8 @@
     });
   }
   function updateVoteLive(counts) {
+    counts = counts || {};
+    if (isBracket()) return updateBracketLive(counts);
     var opts = (sess.event && sess.event.options) || [], total = 0, maxC = 0;
     var idx = {}; opts.forEach(function (o, i) { idx[o.oid] = i; });
     opts.forEach(function (o) { var c = counts[o.oid] || 0; total += c; if (c > maxC) maxC = c; });
@@ -1154,6 +1278,36 @@
     if (orderKey !== sess.orderKey) { sess.orderKey = orderKey; reorderRows(sorted); }
     var vt = $("vtotal"); if (vt) vt.textContent = total;
   }
+  // Live untuk mode bracket: % per duel, badge Juara 1/2/3, tanpa reorder (tim tetap di duelnya)
+  function updateBracketLive(counts) {
+    var brs = evBrackets();
+    sess.prevPct = sess.prevPct || {}; sess.trend = sess.trend || {};
+    brs.forEach(function (b, bi) {
+      var ca = counts[b.a] || 0, cb = counts[b.b] || 0, tot = ca + cb;
+      [b.a, b.b].forEach(function (oid) {
+        var c = counts[oid] || 0, other = (oid === b.a) ? cb : ca;
+        var pct = tot ? Math.round(c / tot * 100) : 0, N = Math.min(PXN, c);
+        var cells = sess.pxCells && sess.pxCells[oid];
+        if (cells) for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", PXRANK[i] < N);
+        var pf = $("vpf_" + oid); if (pf) pf.style.width = pct + "%";
+        var ce = $("vcn_" + oid); if (ce) ce.textContent = pct + "%";
+        var pv = $("pv_" + oid); if (pv) pv.textContent = c + " suara";
+        var prev = sess.prevPct[oid];
+        if (prev !== undefined && pct !== prev) sess.trend[oid] = pct > prev ? "up" : "down";
+        sess.prevPct[oid] = pct;
+        var tr = $("ptr_" + oid); if (tr) { var t = sess.trend[oid] || ""; tr.className = "pm-trend " + t; tr.textContent = t === "up" ? "▲" : t === "down" ? "▼" : "•"; }
+        var isLead = tot > 0 && c > other, isTie = tot > 0 && c === other;
+        var badge = "";
+        if (bi === 0) badge = isTie ? "SERI" : (isLead ? "🏆 JUARA 1" : "🥈 JUARA 2");
+        else badge = isTie ? "SERI" : (isLead ? "🥉 JUARA 3" : "");
+        var ld = $("vld_" + oid);
+        if (ld) { if (tot > 0 && badge) { ld.textContent = badge; ld.className = "vlead vlead-badge" + (isLead ? " win" : ""); ld.style.display = "inline-block"; } else { ld.style.display = "none"; } }
+        var vq = $("vq_" + oid); if (vq) vq.classList.toggle("leader", isLead);
+        var rk = $("prk_" + oid); if (rk) rk.style.display = "none";
+      });
+    });
+    var vt = $("vtotal"); if (vt) vt.textContent = Object.keys((sess.event && sess.event.voterAlias) || {}).length;
+  }
 
   /* ---------- API global untuk markup onclick ---------- */
   window.QUERY = {
@@ -1165,6 +1319,7 @@
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
     flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote, exportVotes: exportVotes,
+    pickBracket: pickBracket, submitBracket: submitBracket,
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 

@@ -345,6 +345,36 @@
     .pm-trend.down{color:#f43f5e;text-shadow:0 0 10px rgba(244,63,94,.5)}
     .pm-num{font-weight:900;font-size:2.4rem;line-height:1;color:var(--tc,#fff);font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.4)}
     .pm-votes{font-size:.82rem;color:#9fb2d0;font-weight:700;margin-top:4px}
+    /* ===== Bracket / Kuadran (Final + Perebutan Juara 3) ===== */
+    .bkt-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
+    .bkt{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:9px 12px 12px;border-radius:20px;
+      background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 26px rgba(0,0,0,.3)}
+    .bkt-final{border-color:rgba(255,209,102,.42)}
+    .bkt-head{flex:0 0 auto;display:flex;align-items:baseline;gap:10px;padding:0 4px;flex-wrap:wrap}
+    .bkt-title{font-weight:900;font-size:1rem;letter-spacing:.07em;text-transform:uppercase;color:#fff}
+    .bkt-final .bkt-title{color:#ffe487}
+    .bkt-sub{font-size:.72rem;font-weight:800;color:#ffd166;letter-spacing:.02em}
+    .bkt-rows{flex:1;min-height:0;display:flex;flex-direction:column;gap:9px}
+    .bkt .pm-rank{display:none}
+    .bkt .pm-row{padding-left:18px}
+    .vlead-badge{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:3px 10px;border-radius:999px;
+      font-size:.7rem;font-weight:900;letter-spacing:.03em;background:rgba(255,255,255,.16);color:#eaf0fb;animation:none;white-space:nowrap}
+    .vlead-badge.win{background:linear-gradient(135deg,#ffe487,#f5a623);color:#5b3b00;box-shadow:0 2px 10px rgba(245,166,35,.5)}
+    /* Form bracket: tebak tiap duel */
+    .bform-head{font-weight:900;font-size:1rem;letter-spacing:.04em;text-transform:uppercase;color:var(--astra-dark);margin-bottom:12px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+    .bform-sub{font-size:.74rem;font-weight:800;color:#f5a623;letter-spacing:.02em;text-transform:none}
+    .bform.err{outline:2px solid var(--love);outline-offset:3px}
+    .bteam-row{display:flex;align-items:stretch;gap:10px}
+    .bteam{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;font:inherit;position:relative;
+      background:#fff;border:2px solid var(--line);border-radius:16px;padding:15px 10px;transition:transform .16s,border-color .16s,box-shadow .16s}
+    .bteam:hover{border-color:var(--astra);transform:translateY(-2px)}
+    .bteam-flag{width:78px;height:52px;object-fit:cover;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+    .bteam-name{font-weight:800;font-size:1.05rem;color:var(--ink)}
+    .bteam-tick{position:absolute;top:7px;right:9px;width:23px;height:23px;border-radius:50%;background:var(--astra);color:#fff;
+      display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:900;opacity:0;transform:scale(.4);transition:.18s}
+    .bteam.sel{border-color:var(--astra);background:var(--astra-soft2);box-shadow:0 8px 20px rgba(0,91,170,.26)}
+    .bteam.sel .bteam-tick{opacity:1;transform:scale(1)}
+    .bvs{align-self:center;flex:0 0 auto;font-weight:900;font-size:.82rem;color:var(--muted);letter-spacing:.06em}
     .vs-pm .vs-copy{color:rgba(255,255,255,.55)}
     /* Panel samping tema dark */
     .vs-pm .wc-fb{background:rgba(255,255,255,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:rgba(255,209,102,.5)}
@@ -470,10 +500,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=33"></script>
+  <script src="config.js?v=34"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=33"></script>
+  <script src="app.js?v=34"></script>
   <script>App.boot();</script>
 </body>
 </html>
