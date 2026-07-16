@@ -33,7 +33,8 @@ git push
 
 | Versi | Tanggal | Commit | Isi |
 |---|---|---|---|
-| **v2.3** | 2026-07-16 | `-` | **(TERKINI)** **Skala tipografi kuadran**: desktop → angka % di-scale up (1.5→**2.6rem**) & nama negara (1.02→**1.5rem**); badge Juara 1/2/3 sengaja dibuat **lebih kecil** dari nama negara & **selalu sebaris** (nowrap, tidak lagi turun ke bawah pada nama panjang spt "Argentina"). Mobile ikut disesuaikan. |
+| **v2.4** | 2026-07-16 | `-` | **(TERKINI)** **Logo QUERY di layar live**: kotak *frosted glass* dihapus (termasuk `backdrop-filter:blur(22px)` yang bikin logo lembut/kurang tajam); logo dijadikan **putih (knockout)** agar kontras di panel gelap — PNG aslinya biru gelap `RGB(0,60,116)`; ukuran diperbesar **56→76px** (desktop) & **30→46px** (mobile). Catatan: PNG sudah 800×304 (resolusi tinggi), jadi masalahnya bukan resolusi. |
+| **v2.3** | 2026-07-16 | `-` | **Skala tipografi kuadran**: desktop → angka % di-scale up (1.5→**2.6rem**) & nama negara (1.02→**1.5rem**); badge Juara 1/2/3 sengaja dibuat **lebih kecil** dari nama negara & **selalu sebaris** (nowrap, tidak lagi turun ke bawah pada nama panjang spt "Argentina"). Mobile ikut disesuaikan. |
 | **v2.2** | 2026-07-16 | `52f4394` | **Sistem versi**: `APP_VERSION` di `config.js`, badge versi tampil di footer & layar live, `CHANGELOG.md` ini, dan **git tag untuk tiap versi** → versi mana pun bisa dikembalikan persis. |
 | **v2.1** | 2026-07-16 | `b5224fc` | Layar live kembali ke **kuadran 2×2 gaya Match**: baris atas Final (Spain vs Argentina), baris bawah Perebutan Juara 3 (France vs England), pembatas **VS**, bar chart diperpendek (10px). |
 | **v2.0** | 2026-07-16 | `dd78653` | **Bracket/prediksi 2 duel.** France masuk lagi (4 tim). Tiap orang menebak pemenang Final **dan** pemenang Juara 3 (2 pilihan, 1 submit). Badge 🏆Juara 1 / 🥈Juara 2 / 🥉Juara 3, % dihitung per-duel. CSV berisi kedua prediksi + klasemen. Pill "World Cup Special Edition" dihapus (`9a07f12`). |

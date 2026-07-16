@@ -311,11 +311,11 @@
     @keyframes pmfloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4vw,-3vw) scale(1.1)}66%{transform:translate(-3vw,3vw) scale(.95)}}
     .vs-pm>*:not(.pm-orbs){position:relative;z-index:1}
     .vs-pm .vs-top{background:rgba(255,255,255,.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:8px 14px;margin-bottom:12px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-    .vs-pm .vs-logobox{display:inline-flex;border-radius:15px;padding:9px 13px;
-      background:linear-gradient(155deg,rgba(240,245,252,.62),rgba(210,224,242,.34));
-      backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);
-      border:1px solid rgba(255,255,255,.55);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -8px 16px rgba(255,255,255,.12),0 10px 26px rgba(0,0,0,.4)}
+    /* Logo QUERY di layar live: TANPA kotak glass. PNG-nya biru gelap → dibuat putih (knockout)
+       agar tajam & kontras di panel gelap; blur backdrop dihapus supaya tidak melembutkan logo. */
+    .vs-pm .vs-logobox{display:inline-flex;padding:0;border:0;border-radius:0;
+      background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+    .vs-pm .vs-logo{height:76px;filter:brightness(0) invert(1) drop-shadow(0 3px 10px rgba(0,0,0,.55))}
     .vs-pm .vs-title{color:#fff;font-size:1.4rem}
     .vs-pm .vs-total{color:#9fb2d0} .vs-pm .vs-total span{color:#fff;font-size:1.3rem}
     .vs-pm .vs-btn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.16);color:#fff}
@@ -408,7 +408,7 @@
       .vs-pm .vs-total{font-size:.66rem} .vs-pm .vs-total span{font-size:1rem}
       .vs-pm .vs-logobox{order:1;margin-top:2px}
       .vs-pm .vs-mid{order:2;flex-basis:auto;text-align:center;gap:5px}
-      .vs-pm .vs-title{font-size:1rem;white-space:normal} .vs-pm .vs-logo{height:30px} .vs-pm .vs-logobox{padding:7px 11px}
+      .vs-pm .vs-title{font-size:1rem;white-space:normal} .vs-pm .vs-logo{height:46px} .vs-pm .vs-logobox{padding:0}
       .vs-pm .vs-wc{font-size:.54rem;padding:3px 8px}
       .vs-pm .vs-body{flex-direction:column;gap:10px}
       .vs-pm .pm-list{flex:0 0 auto;gap:9px}
@@ -532,10 +532,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=41"></script>
+  <script src="config.js?v=42"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=41"></script>
+  <script src="app.js?v=42"></script>
   <script>App.boot();</script>
 </body>
 </html>
