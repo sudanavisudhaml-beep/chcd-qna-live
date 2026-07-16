@@ -1234,7 +1234,7 @@
           (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div><div class="vs-slot vs-slot-wc">' + wcBadgeHTML() + '</div></aside>' : '') +
         '</div>' +
         '<div class="vs-foot">' + wcBadgeHTML() + '</div>' +
-        '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk</div>' +
+        '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk <span class="vtag">QUERY v' + appVersion() + '</span></div>' +
         shareBoxHTML(sess.code) +
       '</div>';
     sess.pxCells = {};
@@ -1332,6 +1332,8 @@
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 
-  function boot() { window.addEventListener("hashchange", route); route(); }
+  function appVersion() { return (window.APP && window.APP.APP_VERSION) || "?"; }
+  function paintVersion() { var el = $("appVer"); if (el) el.textContent = "QUERY v" + appVersion(); }
+  function boot() { paintVersion(); window.addEventListener("hashchange", route); route(); }
   window.App = { boot: boot };
 })();

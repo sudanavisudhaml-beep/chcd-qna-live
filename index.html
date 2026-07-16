@@ -345,6 +345,10 @@
     .pm-trend.down{color:#f43f5e;text-shadow:0 0 10px rgba(244,63,94,.5)}
     .pm-num{font-weight:900;font-size:2.4rem;line-height:1;color:var(--tc,#fff);font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.4)}
     .pm-votes{font-size:.82rem;color:#9fb2d0;font-weight:700;margin-top:4px}
+    /* Badge versi aplikasi (footer + layar live) */
+    .vtag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:800;
+      letter-spacing:.03em;background:var(--astra-soft);color:var(--astra-dark);border:1px solid var(--line);vertical-align:middle}
+    .vs-copy .vtag{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.2);font-size:.58rem;padding:1px 7px}
     /* ===== Kuadran gaya MATCH (2×2): baris atas = Final, baris bawah = Perebutan Juara 3 ===== */
     .mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
     .mrow{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px;padding:8px 12px 11px;border-radius:20px;
@@ -517,15 +521,15 @@
 
   <footer class="foot"><div class="foot-in">
     <div class="credit">Dibuat oleh <span>System Development — GA Department</span></div>
-    <div class="sub">© 2026 · PT Astra International Tbk</div>
+    <div class="sub">© 2026 · PT Astra International Tbk <span class="vtag" id="appVer">QUERY v—</span></div>
   </div></footer>
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=36"></script>
+  <script src="config.js?v=37"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=36"></script>
+  <script src="app.js?v=37"></script>
   <script>App.boot();</script>
 </body>
 </html>
