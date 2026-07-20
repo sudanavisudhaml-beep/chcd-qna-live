@@ -251,8 +251,10 @@
     if (!h) { seg("login"); }
     var jc = $("joinCode"); if (jc) jc.addEventListener("keydown", function (e) { if (e.key === "Enter") join(); });
   }
+  // Ring ripple "sonar" dari ikon Q — varian biru untuk halaman berlatar terang
+  function qrippleHTML() { return '<span class="qripple qblue"><i></i><i></i><i></i></span>'; }
   function brandHTML() {
-    return '<div class="brand"><a href="#/"><img src="query-logo.png" alt="QUERY — Suara Insan Astra" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" />' +
+    return '<div class="brand"><a href="#/" class="qlogo-wrap">' + qrippleHTML() + '<img src="query-logo.png" alt="QUERY — Suara Insan Astra" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" />' +
       '<span class="bfallback">QUERY</span></a><div class="bsub">' + esc(CFG.APP_TAGLINE || "Malu Bertanya, Sesat di Jalan") + '</div></div>';
   }
   function seg(which) {
@@ -409,7 +411,7 @@
       '<div class="wrap">' +
       '<div class="hero">' +
         '<span class="live-pill"><span class="dot"></span> Live Q&amp;A</span>' +
-        '<div class="logo-card"><img src="query-logo.png" alt="QUERY" class="query-logo-img" onerror="this.style.display=\'none\'" /></div>' +
+        '<div class="logo-card"><span class="qlogo-wrap">' + qrippleHTML() + '<img src="query-logo.png" alt="QUERY" class="query-logo-img" onerror="this.style.display=\'none\'" /></span></div>' +
         '<p class="tagline">' + esc(CFG.APP_TAGLINE || "Malu Bertanya, Sesat di Jalan") + '</p>' +
         '<span class="event">' + esc(ev.eventName) + '</span>' +
         (ev.materi ? '<span class="materi">' + esc(ev.materi) + '</span>' : '') +
@@ -558,7 +560,7 @@
   function heroHTML(ev, pill) {
     return '<div class="hero">' +
       '<span class="live-pill"><span class="dot"></span> ' + esc(pill || "Kuesioner") + '</span>' +
-      '<div class="logo-card"><img src="query-logo.png" alt="QUERY" class="query-logo-img" onerror="this.style.display=\'none\'" /></div>' +
+      '<div class="logo-card"><span class="qlogo-wrap">' + qrippleHTML() + '<img src="query-logo.png" alt="QUERY" class="query-logo-img" onerror="this.style.display=\'none\'" /></span></div>' +
       '<p class="tagline">' + esc(CFG.APP_TAGLINE || "Malu Bertanya, Sesat di Jalan") + '</p>' +
       '<span class="event">' + esc(ev.eventName) + '</span>' +
       (ev.materi ? '<span class="materi">' + esc(ev.materi) + '</span>' : '') + '</div>';

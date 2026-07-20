@@ -330,6 +330,10 @@
       14%{opacity:.85}
       100%{transform:translate(-50%,-50%) scale(2.5);opacity:0;border-width:1px}
     }
+    /* Ripple di semua halaman: wrapper pas seukuran logo (agar pusat Q 19.5%/51% akurat) */
+    .qlogo-wrap{position:relative;display:inline-block;line-height:0}
+    .qlogo-wrap img,.qlogo-wrap .bfallback{position:relative;z-index:1}
+    .qripple.qblue i{border-color:rgba(0,91,170,.5)}
     @media(prefers-reduced-motion:reduce){ .qripple{display:none} }
     .vs-pm .vs-title{color:#fff;font-size:1.4rem}
     .vs-pm .vs-total{color:#9fb2d0} .vs-pm .vs-total span{color:#fff;font-size:1.3rem}
@@ -547,10 +551,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=43"></script>
+  <script src="config.js?v=44"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=43"></script>
+  <script src="app.js?v=44"></script>
   <script>App.boot();</script>
 </body>
 </html>
