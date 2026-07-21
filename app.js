@@ -691,11 +691,8 @@
   function ratingOpts() { return '<option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>'; }
   function pickRate(fid, v) { var row = $("fi_" + fid); if (!row) return; row.setAttribute("data-val", v); var bs = row.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("on", parseInt(bs[i].getAttribute("data-v"), 10) <= v); }
   function getFieldValue(f) {
-    var el = $("fi_" + f.fid); if (!el) return "";
-    if (f.type === "short" || f.type === "long") return (el.value || "").trim();
-    if (f.type === "rating") { var v = el.getAttribute("data-val"); return v ? parseInt(v, 10) : ""; }
-    if (f.type === "single") { var r = el.querySelector("input:checked"); return r ? r.value : ""; }
-    if (f.type === "multi") { return [].slice.call(el.querySelectorAll("input:checked")).map(function (c) { return c.value; }); }
+    // Matrix TIDAK punya elemen fi_<fid> (sel-selnya ber-id m_/mo_/mr_), jadi harus
+    // ditangani SEBELUM guard fi_ — kalau tidak, nilainya selalu terbaca kosong (bug "Lengkapi Bagian A").
     if (f.type === "matrix") {
       var rows = f.rows || [], cols = f.cols || [], slots = f.otherSlots || 0, L = {}, O = [];
       for (var ri = 0; ri < rows.length; ri++) for (var ci = 0; ci < cols.length; ci++) { var s = $("m_" + f.fid + "_" + ri + "_" + ci); if (s && s.value) { if (!L[ri]) L[ri] = {}; L[ri][ci] = parseInt(s.value, 10); } }
@@ -707,6 +704,11 @@
       }
       return { L: L, O: O };
     }
+    var el = $("fi_" + f.fid); if (!el) return "";
+    if (f.type === "short" || f.type === "long") return (el.value || "").trim();
+    if (f.type === "rating") { var v = el.getAttribute("data-val"); return v ? parseInt(v, 10) : ""; }
+    if (f.type === "single") { var r2 = el.querySelector("input:checked"); return r2 ? r2.value : ""; }
+    if (f.type === "multi") { return [].slice.call(el.querySelectorAll("input:checked")).map(function (c) { return c.value; }); }
     return "";
   }
   function matrixEmpty(val) { return !val || (Object.keys(val.L || {}).length === 0 && (val.O || []).length === 0); }
