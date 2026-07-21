@@ -1,9 +1,5 @@
-====================================================================
- FIRESTORE RULES — QUERY (project: query-chcd)
- Copy SELURUH isi di bawah garis, paste menggantikan rules lama,
- lalu klik PUBLISH di Firebase Console.
- Console: https://console.firebase.google.com/project/query-chcd/firestore/rules
-====================================================================
+// QUERY - Firestore Rules (project: query-chcd)
+// Seluruh isi file ini VALID. Aman: Ctrl+A -> Ctrl+C -> paste menimpa rules lama -> Publish.
 
 rules_version = '2';
 service cloud.firestore {
@@ -16,22 +12,14 @@ service cloud.firestore {
     }
 
     // Event + SEMUA subkoleksinya (questions, responses, dll)
-    // Catch-all {document=**} inilah yang bikin subkoleksi "responses" (kuesioner) bisa jalan.
     match /events/{event} {
       allow read, write: if true;
 
+      // Baris catch-all inilah yang membuka subkoleksi "responses" (kuesioner).
+      // Tanpa ini, submit kuesioner gagal: permission-denied.
       match /{document=**} {
         allow read, write: if true;
       }
     }
   }
 }
-
-====================================================================
- CATATAN
- - Baris "match /{document=**}" WAJIB ada. Tanpa itu, submit kuesioner
-   gagal dengan error permission-denied (subkoleksi "responses" diblokir).
- - Rules ini terbuka (siapa pun bisa baca/tulis) — sesuai kebutuhan
-   event internal tanpa login. Untuk jangka panjang, pertimbangkan
-   membatasi per-event atau memakai Firebase Auth.
-====================================================================
