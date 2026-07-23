@@ -218,6 +218,7 @@
     if (h === "/dashboard") return renderDashboard();
     if ((m = h.match(/^\/build\/([A-Za-z0-9]+)$/))) return renderBuilder(m[1].toUpperCase());
     if ((m = h.match(/^\/e\/([A-Za-z0-9]+)$/))) return renderSession(m[1].toUpperCase());
+    if ((m = h.match(/^\/r\/([A-Za-z0-9]+)$/))) return renderSession(m[1].toUpperCase(), "results");
     return renderLanding();
   }
 
@@ -353,6 +354,7 @@
     }).catch(function (e) { var el = $("evList"); if (el) el.innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>'; });
   }
   function sessionURL(code) { return location.origin + location.pathname + "#/e/" + code; }
+  function resultsURL(code) { return location.origin + location.pathname + "#/r/" + code; }
   var newType = "qna";
   function pickType(t, btn) {
     newType = t;
@@ -385,14 +387,14 @@
      SESSION — papan diskusi sebuah event
      ============================================================ */
   var sess = null; // { code, event, isOwner, items, unsub, sortByTop, openReply, openAnswer, reacts }
-  function renderSession(code) {
+  function renderSession(code, mode) {
     if (sess && sess.unsub) { try { sess.unsub(); } catch (e) {} }
     view().innerHTML = '<div class="wrap"><div class="empty">Memuat sesi…</div></div>';
     getEvent(code).then(function (ev) {
       if (!ev) { view().innerHTML = '<div class="page"><div class="card center"><h3 class="sec">Event tidak ditemukan</h3><p class="muted" style="margin:8px 0 14px">Kode <b>' + esc(code) + '</b> tidak ada.</p><button class="btn" onclick="QUERY.go(\'/\')">Kembali</button></div></div>'; return; }
       var host = getHost();
       var isOwner = !!(host && host.user === ev.hostUser);
-      sess = { code: code, event: ev, isOwner: isOwner, items: [], sortByTop: true, openReply: {}, openAnswer: {}, host: host,
+      sess = { code: code, event: ev, isOwner: isOwner, viewResults: (mode === "results"), items: [], sortByTop: true, openReply: {}, openAnswer: {}, host: host,
         reacts: JSON.parse(localStorage.getItem("query_reacts") || "{}"), name: localStorage.getItem("query_name") || (isOwner ? host.name : "") };
       if (ev.type === "survey") { renderSurveySession(); return; }
       if (ev.type === "vote") { renderVoteSession(); return; }
@@ -648,7 +650,11 @@
   }
 
   /* ----- Sesi survei: form (audience) / hasil (host) ----- */
-  function renderSurveySession() { if (sess.isOwner) renderSurveyResults(); else renderSurveyForm(); }
+  function renderSurveySession() {
+    // Hasil tampil untuk pemilik ATAU siapa pun yang membuka link hasil (#/r/CODE) — read-only.
+    if (sess.isOwner || sess.viewResults) renderSurveyResults(!sess.isOwner);
+    else renderSurveyForm();
+  }
 
   function renderSurveyForm() {
     var ev = sess.event, fields = ev.fields || [];
@@ -735,15 +741,32 @@
   }
   function fillAgain() { localStorage.removeItem("query_sub_" + sess.code); sess.name = localStorage.getItem("query_name") || ""; renderSurveyForm(); }
 
-  function renderSurveyResults() {
-    var ev = sess.event;
+  function resultsShareBoxHTML(code) {
+    var link = resultsURL(code), qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
+    return '<div class="share-box rshare" id="rshare_' + code + '">' +
+      '<div class="rshare-note">👁️ Link ini membuka <b>halaman Hasil (read-only)</b> — atasan bisa lihat tanpa login &amp; tanpa masuk form. Siapa pun yang memegang link bisa melihat, jadi bagikan seperlunya.</div>' +
+      '<img alt="QR Hasil" src="' + qr + '" />' +
+      '<div class="lnk">' + esc(link) + '</div>' +
+      '<button class="btn small block" style="margin-top:10px" onclick="QUERY.copy(\'' + link + '\')">📋 Salin Link Hasil</button>' +
+    '</div>';
+  }
+  function shareResults(code) { var b = $("rshare_" + code); if (b) b.classList.toggle("open"); }
+  function renderSurveyResults(readonly) {
+    var ev = sess.event, banner, actions, extra = "";
+    if (readonly) {
+      banner = '<div class="banner" style="background:var(--astra-soft);border-color:#bcd6f5;color:var(--astra-dark)">👁️ <b>Tampilan Hasil</b> — ringkasan kuesioner real-time (khusus lihat).</div>';
+      actions = '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Export CSV</button>';
+    } else {
+      banner = '<div class="banner" style="background:var(--ok-soft);border-color:#b7e4c7;color:#0f7a37">✅ <b>Hasil (khusus host)</b> — real-time. <span class="nlink" style="margin-left:6px" onclick="QUERY.go(\'/dashboard\')">← Dashboard</span></div>';
+      actions = '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + sess.code + '\')">📝 Edit Pertanyaan</button>' +
+        '<button class="btn small" onclick="QUERY.shareResults(\'' + sess.code + '\')">🔗 Bagikan Hasil ke Atasan</button>' +
+        '<button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR isi kuesioner</button>' +
+        '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Export CSV</button>';
+      extra = resultsShareBoxHTML(sess.code);
+    }
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Hasil Kuesioner") +
-      '<div class="banner" style="background:var(--ok-soft);border-color:#b7e4c7;color:#0f7a37">✅ <b>Hasil (khusus host)</b> — real-time. <span class="nlink" style="margin-left:6px" onclick="QUERY.go(\'/dashboard\')">← Dashboard</span></div>' +
-      '<div class="ev-actions" style="margin-bottom:14px">' +
-        '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + sess.code + '\')">📝 Edit Pertanyaan</button>' +
-        '<button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR & Link</button>' +
-        '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Export CSV</button>' +
-      '</div>' + shareBoxHTML(sess.code) +
+      banner +
+      '<div class="ev-actions" style="margin-bottom:14px">' + actions + '</div>' + extra +
       '<div id="results"><div class="empty">Menunggu respons…</div></div></div>';
     sess.unsub = subscribeResponses(sess.code, function (resp) { sess.responses = resp; renderResults(); });
   }
@@ -1327,7 +1350,7 @@
   window.QUERY = {
     go: go, seg: seg, logout: function () { clearHost(); setNav(); toast("Keluar"); go("/"); },
     login: doLogin, register: doRegister, join: doJoin,
-    createEvent: doCreateEvent, share: doShare, copy: doCopy, delEvent: doDelEvent,
+    createEvent: doCreateEvent, share: doShare, shareResults: shareResults, copy: doCopy, delEvent: doDelEvent,
     react: react, toggleReply: toggleReply, sendReply: sendReply, openAnswer: openAnswer, saveAnswer: saveAnswer, unanswer: unanswer, delQ: delQ,
     fmt: fmt, fmtKey: fmtKey,
     pickType: pickType, nfType: nfTypeUI, addField: addField, delField: delField, moveField: moveField,
