@@ -542,8 +542,8 @@
       padding:12px 26px;border-radius:999px;box-shadow:0 14px 40px rgba(0,0,0,.45);white-space:nowrap;z-index:3}
     .pz-done.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
     .pz-revealbtn{background:linear-gradient(135deg,#ffe487,#f5a623) !important;border-color:rgba(255,209,102,.6) !important;color:#5b3b00 !important}
-    /* Testimoni melintas lalu jatuh & hilang */
-    .pz-pops{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
+    /* Testimoni melintas lalu jatuh & hilang. .pz-screen prefix agar menang atas .vs-pm>* (yang memaksa position:relative) */
+    .pz-screen .pz-pops{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
     .pz-pop{position:absolute;top:16%;max-width:min(340px,72vw);background:rgba(255,255,255,.97);color:var(--ink);border-radius:16px;border-left:5px solid var(--astra);
       padding:12px 16px;box-shadow:0 16px 40px rgba(0,0,0,.32);opacity:0;transform:translateY(-18px) scale(.9);transition:opacity .4s ease,transform .5s cubic-bezier(.2,1.4,.4,1)}
     .pz-pop.show{opacity:1;transform:translateY(0) scale(1)}
@@ -588,10 +588,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=47"></script>
+  <script src="config.js?v=48"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=47"></script>
+  <script src="app.js?v=48"></script>
   <script>App.boot();</script>
 </body>
 </html>
