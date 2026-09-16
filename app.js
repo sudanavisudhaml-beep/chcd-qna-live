@@ -118,6 +118,7 @@
         var doc = { code: code, hostUser: host.user, hostName: host.name, eventName: eventName.trim(), materi: (materi || "").trim(), type: (type || "qna"), createdAt: FV().serverTimestamp() };
         if (type === "survey") doc.fields = [];
         if (type === "vote") { doc.options = []; doc.voteCounts = {}; doc.voteRound = uid().slice(0, 10); }
+        if (type === "puzzle") { doc.pzCols = 6; doc.pzRows = 4; doc.pzImg1 = "hka1.png"; doc.pzImg2 = "hka2.png"; doc.flips = 0; doc.flipRound = uid().slice(0, 10); }
         return ref.set(doc).then(function () { return code; });
       });
     }
@@ -305,7 +306,7 @@
       '<div class="card" style="margin-bottom:18px">' +
         '<h3 class="sec">➕ Buat Sesi Baru</h3>' +
         '<label class="fld">Jenis Sesi</label>' +
-        '<div class="seg" id="typeSeg"><button class="active" onclick="QUERY.pickType(\'qna\',this)">💬 Q&amp;A</button><button onclick="QUERY.pickType(\'survey\',this)">📋 Kuesioner</button><button onclick="QUERY.pickType(\'vote\',this)">🗳️ Vote</button></div>' +
+        '<div class="seg" id="typeSeg"><button class="active" onclick="QUERY.pickType(\'qna\',this)">💬 Q&amp;A</button><button onclick="QUERY.pickType(\'survey\',this)">📋 Kuesioner</button><button onclick="QUERY.pickType(\'vote\',this)">🗳️ Vote</button><button onclick="QUERY.pickType(\'puzzle\',this)">🧩 Puzzle</button></div>' +
         '<label class="fld">Nama Event / Forum</label><input type="text" id="evName" maxlength="60" placeholder="mis. Kopdar CHCD" />' +
         '<label class="fld">Nama Materi / Agenda</label><input type="text" id="evMateri" maxlength="100" placeholder="mis. Sosialisasi Juklak Pengadaan Barang dan Jasa" />' +
         '<div class="hintline" id="typeHint">Sesi tanya-jawab live dengan reaksi & balasan.</div>' +
@@ -324,11 +325,13 @@
       el.innerHTML = events.map(function (ev) {
         var link = sessionURL(ev.code);
         var qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
-        var isSurvey = ev.type === "survey", isVote = ev.type === "vote";
+        var isSurvey = ev.type === "survey", isVote = ev.type === "vote", isPuzzle = ev.type === "puzzle";
         var typeBadge = isVote
           ? '<span class="badge" style="background:#e7f6ec;color:#0f7a37">🗳️ Vote</span>'
           : isSurvey
           ? '<span class="badge" style="background:#efe7fb;color:#6d34d6">📋 Kuesioner</span>'
+          : isPuzzle
+          ? '<span class="badge" style="background:#fff3d6;color:#a05a00">🧩 Puzzle HKA</span>'
           : '<span class="badge" style="background:var(--astra-soft);color:var(--astra-dark)">💬 Diskusi Q&amp;A</span>';
         var mainBtns = isVote
           ? '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">📺 Tampilan Live</button>' +
@@ -336,6 +339,9 @@
           : isSurvey
           ? '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">📊 Lihat Hasil</button>' +
             '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + ev.code + '\')">📝 Edit Pertanyaan (' + ((ev.fields || []).length) + ')</button>'
+          : isPuzzle
+          ? '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">📺 Tampilan Live</button>' +
+            '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + ev.code + '\')">🧩 Atur Puzzle</button>'
           : '<button class="btn small" onclick="QUERY.go(\'/e/' + ev.code + '\')">Buka Sesi</button>';
         return '<div class="ev-card">' +
           '<div style="margin-bottom:6px">' + typeBadge + '</div>' +
@@ -360,7 +366,7 @@
     newType = t;
     var seg = $("typeSeg"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); }
     if (btn) btn.classList.add("active");
-    var hint = $("typeHint"); if (hint) hint.textContent = t === "survey" ? "Kuesioner ala MS Forms — Anda susun pertanyaannya, hasil tampil live & bisa diringkas." : (t === "vote" ? "Vote live — audience pilih opsi (mis. negara), bendera membesar seiring vote. Cocok untuk layar/proyektor." : "Sesi tanya-jawab live dengan reaksi & balasan.");
+    var hint = $("typeHint"); if (hint) hint.textContent = t === "survey" ? "Kuesioner ala MS Forms — Anda susun pertanyaannya, hasil tampil live & bisa diringkas." : (t === "vote" ? "Vote live — audience pilih opsi (mis. negara), bendera membesar seiring vote. Cocok untuk layar/proyektor." : (t === "puzzle" ? "Puzzle Reveal — peserta scan & tulis testimoni, tiap testimoni membuka 1 keping sampai gambar (mis. lokasi acara) terungkap. Cocok untuk layar/proyektor." : "Sesi tanya-jawab live dengan reaksi & balasan."));
   }
   function doCreateEvent() {
     var h = getHost(); if (!h) { go("/"); return; }
@@ -370,7 +376,7 @@
     createEvent(h, name, materi, t).then(function (code) {
       toast("Sesi dibuat — kode " + code);
       $("evName").value = ""; $("evMateri").value = "";
-      if (t === "survey" || t === "vote") go("/build/" + code); else loadEvents();
+      if (t === "survey" || t === "vote" || t === "puzzle") go("/build/" + code); else loadEvents();
     }).catch(function (e) { toast(e.message || "Gagal membuat sesi"); });
   }
   function doShare(code) { var b = $("share_" + code); if (b) b.classList.toggle("open"); }
@@ -398,6 +404,7 @@
         reacts: JSON.parse(localStorage.getItem("query_reacts") || "{}"), name: localStorage.getItem("query_name") || (isOwner ? host.name : "") };
       if (ev.type === "survey") { renderSurveySession(); return; }
       if (ev.type === "vote") { renderVoteSession(); return; }
+      if (ev.type === "puzzle") { renderPuzzleSession(); return; }
       buildSessionDOM();
       sess.unsub = subscribeQ(code, function (data) { sess.items = data; renderFeed(); });
     }).catch(function (e) { view().innerHTML = '<div class="page"><div class="card center">Gagal memuat: ' + esc(e.message) + '</div></div>'; });
@@ -581,6 +588,7 @@
       if (!ev) { view().innerHTML = '<div class="page"><div class="card center">Sesi tidak ditemukan.</div></div>'; return; }
       if (!host || host.user !== ev.hostUser) { view().innerHTML = '<div class="page"><div class="card center"><h3 class="sec">Khusus host</h3><p class="muted" style="margin:8px 0 14px">Hanya host pemilik yang bisa mengubah sesi ini.</p><button class="btn" onclick="QUERY.go(\'/\')">Masuk sebagai host</button></div></div>'; return; }
       if (ev.type === "vote") { renderVoteBuilder(ev); return; }
+      if (ev.type === "puzzle") { renderPuzzleBuilder(ev); return; }
       builder = { code: code, event: ev, fields: (ev.fields || []).slice() };
       view().innerHTML =
         '<div class="page">' +
@@ -755,13 +763,13 @@
     var ev = sess.event, banner, actions, extra = "";
     if (readonly) {
       banner = '<div class="banner" style="background:var(--astra-soft);border-color:#bcd6f5;color:var(--astra-dark)">👁️ <b>Tampilan Hasil</b> — ringkasan kuesioner real-time (khusus lihat).</div>';
-      actions = '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Export CSV</button>';
+      actions = '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Unduh Excel (Rapi)</button>';
     } else {
       banner = '<div class="banner" style="background:var(--ok-soft);border-color:#b7e4c7;color:#0f7a37">✅ <b>Hasil (khusus host)</b> — real-time. <span class="nlink" style="margin-left:6px" onclick="QUERY.go(\'/dashboard\')">← Dashboard</span></div>';
       actions = '<button class="btn ghost small" onclick="QUERY.go(\'/build/' + sess.code + '\')">📝 Edit Pertanyaan</button>' +
         '<button class="btn small" onclick="QUERY.shareResults(\'' + sess.code + '\')">🔗 Bagikan Hasil ke Atasan</button>' +
         '<button class="btn ghost small" onclick="QUERY.share(\'' + sess.code + '\')">QR isi kuesioner</button>' +
-        '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Export CSV</button>';
+        '<button class="btn secondary small" onclick="QUERY.exportSurvey()">⬇ Unduh Excel (Rapi)</button>';
       extra = resultsShareBoxHTML(sess.code);
     }
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Hasil Kuesioner") +
@@ -892,23 +900,147 @@
     if (!resp.length) { el.innerHTML = head + '<div class="empty">Belum ada yang mengisi. Bagikan QR/link-nya 👆</div>'; return; }
     el.innerHTML = head + summaryHTML(fields, resp) + fields.map(function (f) { return fieldResultCard(f, resp); }).join("") + tableHTML(fields, resp);
   }
-  function exportSurvey() {
-    var ev = sess.event, fields = ev.fields || [], resp = sess.responses || [];
-    var header = ["Nama", "Waktu"];
-    fields.forEach(function (f) { if (f.type === "matrix") { (f.cols || []).forEach(function (c) { header.push(f.label + " — " + c); }); header.push(f.label + " — Vendor Lainnya"); } else header.push(f.label); });
-    var rows = [header];
-    resp.slice().sort(function (a, b) { return tsOf(a) - tsOf(b); }).forEach(function (r) {
-      var row = [r.name || "Anonim", tsOf(r) ? new Date(tsOf(r)).toLocaleString("id-ID") : ""];
-      fields.forEach(function (f) {
-        var v = r.answers ? r.answers[f.fid] : "";
-        if (f.type === "matrix") { var rc = (f.rows || []).length; (f.cols || []).forEach(function (c, ci) { var av = respVendorAvg(v, ci, rc); row.push(av === "" ? "" : Number(av).toFixed(2)); }); row.push(respOthersText(v)); }
-        else row.push(Array.isArray(v) ? v.join(" | ") : (v == null ? "" : String(v)));
-      });
-      rows.push(row);
+  /* ---------- Export XLSX rapi — tanpa library (stored-zip + CRC32, string inline) ---------- */
+  var XLSX_CRC = (function () { var t = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; } return t; })();
+  function xcrc32(b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = XLSX_CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function xutf8(s) { return new TextEncoder().encode(s); }
+  function xzipStore(files) {
+    function u16(n) { return [n & 255, (n >> 8) & 255]; }
+    function u32(n) { return [n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255]; }
+    var parts = [], central = [], offset = 0;
+    files.forEach(function (f) {
+      var nb = xutf8(f.name), data = f.data, crc = xcrc32(data);
+      var loc = [80, 75, 3, 4].concat(u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nb.length), u16(0));
+      parts.push(new Uint8Array(loc), nb, data);
+      central.push(new Uint8Array([80, 75, 1, 2].concat(u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nb.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), nb);
+      offset += loc.length + nb.length + data.length;
     });
-    var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
-    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = "hasil-kuesioner-" + ev.code + ".csv"; a.click(); URL.revokeObjectURL(a.href);
+    var cSize = 0; central.forEach(function (c) { cSize += c.length; });
+    var end = new Uint8Array([80, 75, 5, 6].concat(u16(0), u16(0), u16(files.length), u16(files.length), u32(cSize), u32(offset), u16(0)));
+    var all = parts.concat(central); all.push(end);
+    var total = 0; all.forEach(function (a) { total += a.length; });
+    var out = new Uint8Array(total), p = 0; all.forEach(function (a) { out.set(a, p); p += a.length; });
+    return out;
+  }
+  function xesc(s) { if (s == null) return ""; return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function xcol(n) { var s = ""; n++; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - m) / 26); } return s; }
+  function XT(v, s) { return { k: "s", v: v, s: s || 0 }; }
+  function XN(v, s) { return { k: "n", v: v, s: s || 0 }; }
+  function xcell(ref, c) {
+    if (c.k === "n") { return (c.v == null || c.v === "") ? '<c r="' + ref + '" s="' + c.s + '"/>' : '<c r="' + ref + '" s="' + c.s + '"><v>' + c.v + '</v></c>'; }
+    return '<c r="' + ref + '" s="' + c.s + '" t="inlineStr"><is><t xml:space="preserve">' + xesc(c.v) + '</t></is></c>';
+  }
+  function xsheet(rows, opt) {
+    opt = opt || {};
+    var sd = "";
+    for (var r = 0; r < rows.length; r++) { var rr = r + 1, cells = rows[r], s = '<row r="' + rr + '">'; for (var c = 0; c < cells.length; c++) s += xcell(xcol(c) + rr, cells[c]); sd += s + "</row>"; }
+    var cols = opt.cols ? '<cols>' + opt.cols.map(function (w, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>'; }).join("") + '</cols>' : "";
+    var views = '<sheetViews><sheetView workbookViewId="0"/></sheetViews>';
+    if (opt.freeze) { var fx = opt.freeze.x || 0, fy = opt.freeze.y || 0, ap = (fx && fy) ? "bottomRight" : (fx ? "topRight" : "bottomLeft"); views = '<sheetViews><sheetView workbookViewId="0"><pane ' + (fx ? 'xSplit="' + fx + '" ' : '') + (fy ? 'ySplit="' + fy + '" ' : '') + 'topLeftCell="' + xcol(fx) + (fy + 1) + '" activePane="' + ap + '" state="frozen"/></sheetView></sheetViews>'; }
+    var merges = (opt.merges && opt.merges.length) ? '<mergeCells count="' + opt.merges.length + '">' + opt.merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join("") + '</mergeCells>' : "";
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + views + '<sheetFormatPr defaultRowHeight="15"/>' + cols + '<sheetData>' + sd + '</sheetData>' + merges + '</worksheet>';
+  }
+  var XLSX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.00"/></numFmts><fonts count="6"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="15"/><color rgb="FF00417C"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF65728A"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF00417C"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF005BAA"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFE9A8"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F8FD"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFC7D0DE"/></left><right style="thin"><color rgb="FFC7D0DE"/></right><top style="thin"><color rgb="FFC7D0DE"/></top><bottom style="thin"><color rgb="FFC7D0DE"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="164" fontId="1" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf></cellXfs></styleSheet>';
+  function xlsxBlob(defs) {
+    var files = [], ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+    var sheetTags = "", relTags = "";
+    defs.forEach(function (d, i) { var n = i + 1;
+      ct += '<Override PartName="/xl/worksheets/sheet' + n + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+      sheetTags += '<sheet name="' + xesc(d.name) + '" sheetId="' + n + '" r:id="rId' + n + '"/>';
+      relTags += '<Relationship Id="rId' + n + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + n + '.xml"/>';
+      files.push({ name: "xl/worksheets/sheet" + n + ".xml", data: xutf8(xsheet(d.rows, d.opt)) });
+    });
+    ct += '</Types>';
+    relTags += '<Relationship Id="rId' + (defs.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+    var wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + sheetTags + '</sheets></workbook>';
+    var wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + relTags + '</Relationships>';
+    var rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+    files.unshift({ name: "xl/styles.xml", data: xutf8(XLSX_STYLES) });
+    files.unshift({ name: "xl/_rels/workbook.xml.rels", data: xutf8(wbRels) });
+    files.unshift({ name: "xl/workbook.xml", data: xutf8(wb) });
+    files.unshift({ name: "_rels/.rels", data: xutf8(rootRels) });
+    files.unshift({ name: "[Content_Types].xml", data: xutf8(ct) });
+    return new Blob([xzipStore(files)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  }
+  var DIMNAME = { Q: "Quality", C: "Cost", D: "Delivery", S: "Safety", M: "Morale" };
+  function cleanLabel(l) { return String(l || "").replace(/^BAGIAN\s+[A-Z]\s*[—-]\s*/i, "").trim(); }
+  function r2(x) { return (x == null) ? null : Math.round(x * 100) / 100; }
+  function avgOf(a) { return (a && a.length) ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : null; }
+  function exportSurvey() {
+    var ev = sess.event, fields = ev.fields || [], resp = (sess.responses || []).slice().sort(function (a, b) { return tsOf(a) - tsOf(b); });
+    var mf = null; for (var i = 0; i < fields.length; i++) { if (fields[i].type === "matrix") { mf = fields[i]; break; } }
+    var sheets = [];
+
+    // ---- SHEET 1: Rekap & Peringkat (bila ada matrix) ----
+    if (mf) {
+      var mcols = mf.cols || [], mrows = mf.rows || [];
+      var rowDim = mrows.map(function (rw) { var m = /^\s*\[([A-Za-z])\]/.exec(rw); return m ? m[1].toUpperCase() : null; });
+      var dimsPresent = []; rowDim.forEach(function (d) { if (d && dimsPresent.indexOf(d) < 0) dimsPresent.push(d); });
+      var vend = {}, order = [];
+      function ven(n, listed) { if (!vend[n]) { vend[n] = { sc: [], byDim: {}, raters: 0, listed: listed }; order.push(n); } return vend[n]; }
+      mcols.forEach(function (c) { ven(c, true); });
+      resp.forEach(function (rp) {
+        var a = rp.answers ? rp.answers[mf.fid] : null; if (!a) return; var L = mL(a);
+        mcols.forEach(function (c, ci) { var got = false; for (var ri = 0; ri < mrows.length; ri++) { var v = mcell(L, ri, ci); if (typeof v === "number") { vend[c].sc.push(v); got = true; var d = rowDim[ri]; if (d) (vend[c].byDim[d] = vend[c].byDim[d] || []).push(v); } } if (got) vend[c].raters++; });
+        (a.O || []).forEach(function (o) { var vn = ven(o.v, false), rr = o.r || {}, got = false; Object.keys(rr).forEach(function (k) { var v = rr[k]; if (typeof v === "number") { vn.sc.push(v); got = true; var d = rowDim[parseInt(k, 10)]; if (d) (vn.byDim[d] = vn.byDim[d] || []).push(v); } }); if (got) vn.raters++; });
+      });
+      var rank = order.map(function (n) { var g = vend[n], o = { name: n, listed: g.listed, total: r2(avgOf(g.sc)), raters: g.raters, dim: {} }; dimsPresent.forEach(function (d) { o.dim[d] = r2(avgOf(g.byDim[d])); }); return o; }).filter(function (o) { return o.total != null; });
+      rank.sort(function (x, y) { return (y.total || 0) - (x.total || 0); });
+      var totalCols = 2 + dimsPresent.length + 2, lastL = xcol(totalCols - 1);
+      var rows = [];
+      rows.push([XT("REKAP — " + (ev.eventName || "Kuesioner"), 1)]);
+      rows.push([XT("Skala 1-5 (makin tinggi makin baik) · " + resp.length + " responden", 8)]);
+      rows.push([]);
+      var hdr = [XT("Peringkat", 2), XT("Vendor", 2)]; dimsPresent.forEach(function (d) { hdr.push(XT(DIMNAME[d] || d, 2)); }); hdr.push(XT("TOTAL Rata-rata", 2), XT("Jml Penilai", 2));
+      rows.push(hdr);
+      rank.forEach(function (o, idx) { var top = idx === 0, st = top ? 6 : 5, sn = top ? 7 : 4, stv = top ? 6 : 3; var row = [XT(String(idx + 1), st), XT(o.listed ? o.name : o.name + " (lainnya)", stv)]; dimsPresent.forEach(function (d) { row.push(XN(o.dim[d], sn)); }); row.push(XN(o.total, sn), XN(o.raters, st)); rows.push(row); });
+      rows.push([]);
+      rows.push([XT('Catatan: "Jml Penilai" = jumlah responden yang menilai vendor tsb. Vendor dgn penilai sedikit kurang mewakili.', 8)]);
+      var colW = [10, 24]; dimsPresent.forEach(function () { colW.push(10); }); colW.push(15, 11);
+      sheets.push({ name: "Rekap & Peringkat", rows: rows, opt: { cols: colW, freeze: { y: 4 }, merges: ["A1:" + lastL + "1", "A2:" + lastL + "2"] } });
+    }
+
+    // ---- SHEET 2: Detail per Responden ----
+    var shortFs = fields.filter(function (f) { return f.type !== "matrix" && f.type !== "long"; });
+    var longFs = fields.filter(function (f) { return f.type === "long"; });
+    var others = [];
+    if (mf) resp.forEach(function (rp) { var a = rp.answers ? rp.answers[mf.fid] : null; if (a && a.O) a.O.forEach(function (o) { if (others.indexOf(o.v) < 0) others.push(o.v); }); });
+    var d = [];
+    d.push([XT("DETAIL PER RESPONDEN" + (mf ? " (skor rata-rata per vendor)" : ""), 1)]);
+    d.push([]);
+    var dh = [XT("No", 2), XT("Nama", 2), XT("Waktu", 2)];
+    shortFs.forEach(function (f) { dh.push(XT(cleanLabel(f.label), 2)); });
+    if (mf) { (mf.cols || []).forEach(function (c) { dh.push(XT(c, 2)); }); others.forEach(function (n) { dh.push(XT(n + " (lainnya)", 2)); }); }
+    d.push(dh);
+    resp.forEach(function (rp, idx) {
+      var row = [XN(idx + 1, 5), XT(rp.name || "Anonim", 3), XT(tsOf(rp) ? new Date(tsOf(rp)).toLocaleString("id-ID") : "", 5)];
+      shortFs.forEach(function (f) { var v = rp.answers ? rp.answers[f.fid] : ""; if (f.type === "rating") row.push(XN(typeof v === "number" ? v : null, 4)); else row.push(XT(Array.isArray(v) ? v.join(" | ") : (v == null ? "" : String(v)), 3)); });
+      if (mf) { var a = rp.answers ? rp.answers[mf.fid] : null, rc = (mf.rows || []).length;
+        (mf.cols || []).forEach(function (c, ci) { var av = respVendorAvg(a, ci, rc); row.push(XN(av === "" ? null : r2(av), 4)); });
+        others.forEach(function (n) { var found = null; if (a && a.O) a.O.forEach(function (o) { if (o.v === n) { var rr = o.r || {}, s = 0, cnt = 0; Object.keys(rr).forEach(function (k) { if (typeof rr[k] === "number") { s += rr[k]; cnt++; } }); found = cnt ? r2(s / cnt) : null; } }); row.push(XN(found, 4)); });
+      }
+      d.push(row);
+    });
+    var dCols = [5, 22, 18]; shortFs.forEach(function () { dCols.push(16); }); if (mf) { (mf.cols || []).forEach(function () { dCols.push(13); }); others.forEach(function () { dCols.push(15); }); }
+    sheets.push({ name: "Detail per Responden", rows: d, opt: { cols: dCols, freeze: { x: 2, y: 3 }, merges: ["A1:" + xcol(dh.length - 1) + "1"] } });
+
+    // ---- SHEET 3: Masukan Kualitatif (jawaban teks panjang) ----
+    if (longFs.length) {
+      var t = []; t.push([XT("MASUKAN / JAWABAN TEKS", 1)]); t.push([]);
+      var th = [XT("No", 2), XT("Nama", 2)]; longFs.forEach(function (f) { th.push(XT(cleanLabel(f.label), 2)); }); t.push(th);
+      resp.forEach(function (rp, idx) { var row = [XN(idx + 1, 5), XT(rp.name || "Anonim", 3)]; longFs.forEach(function (f) { var v = rp.answers ? rp.answers[f.fid] : ""; row.push(XT(v == null ? "" : String(v), 3)); }); t.push(row); });
+      var tCols = [5, 20]; longFs.forEach(function () { tCols.push(44); });
+      sheets.push({ name: "Masukan Kualitatif", rows: t, opt: { cols: tCols, freeze: { y: 3 }, merges: ["A1:" + xcol(th.length - 1) + "1"] } });
+    }
+
+    if (!sheets.length) { toast("Belum ada data untuk diekspor"); return; }
+    try {
+      var blob = xlsxBlob(sheets), a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "Hasil " + String(ev.eventName || "Kuesioner").replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim() + ".xlsx";
+      a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+      toast("File Excel rapi terunduh 📊");
+    } catch (e) { toast("Gagal membuat Excel: " + (e && e.message)); }
   }
 
   /* ============================================================
@@ -1346,6 +1478,189 @@
     var vt = $("vtotal"); if (vt) vt.textContent = Object.keys((sess.event && sess.event.voterAlias) || {}).length;
   }
 
+  /* ============================================================
+     PUZZLE REVEAL — testimoni membuka keping, HKA-1 → HKA-2 (lokasi tersembunyi)
+     ============================================================ */
+  var puzzleB = null;
+  function pzTotal(ev) { ev = ev || (sess && sess.event) || {}; return (ev.pzCols || 6) * (ev.pzRows || 4); }
+  function pzImg(ev, which) { ev = ev || sess.event; return which === 2 ? (ev.pzImg2 || "hka2.png") : (ev.pzImg1 || "hka1.png"); }
+  // Urutan buka keping acak-deterministik: keping ke-k terbuka saat jumlah buka mencapai PZRANK-nya
+  function pzRankOrder(total) {
+    var a = []; for (var i = 0; i < total; i++) a.push(i);
+    var s = 1985229328;
+    for (var k = total - 1; k > 0; k--) { s = (s * 1103515245 + 12345) & 0x7fffffff; var j = s % (k + 1); var t = a[k]; a[k] = a[j]; a[j] = t; }
+    var r = new Array(total); for (var m = 0; m < total; m++) r[a[m]] = m; return r; // r[cellIndex] = urutan buka
+  }
+  // Sudah buka keping di HP ini? (kunci server voters/voterAlias + fallback lokal)
+  function getMyFlip() {
+    var round = (sess.event && sess.event.flipRound) || "", dev = getDeviceId();
+    var voters = (sess.event && sess.event.voters) || {}, va = (sess.event && sess.event.voterAlias) || {};
+    if (round && (voters[dev] === round || va[dev])) return true;
+    var raw = null; try { raw = localStorage.getItem("query_flip_" + sess.code); } catch (e) {} if (!raw) raw = getCookie("qf_" + sess.code);
+    return !!(raw && round && raw === round);
+  }
+  // Rekam via TRANSACTION: 1 HP 1 keping; flips absolut (idempoten walau retry)
+  function flipPuzzle(code, dev, round, name, comment) {
+    var ref = db.collection("events").doc(code), ts = Date.now();
+    return db.runTransaction(function (tx) {
+      return tx.get(ref).then(function (doc) {
+        var d = (doc.exists && doc.data()) || {}, va = d.voterAlias || {};
+        if (dev && va[dev]) throw new Error("already-flipped");
+        var total = pzTotal(d), cur = d.flips || 0, u = {};
+        if (cur < total) u.flips = cur + 1;
+        u.lastFlip = { n: name, c: comment, ts: ts };
+        if (dev) { u["voters." + dev] = round; u["voterAlias." + dev] = { n: name, c: comment, t: ts }; }
+        tx.update(ref, u);
+      });
+    });
+  }
+  function resetPuzzle() {
+    if (!sess.isOwner) return;
+    if (!confirm("Reset puzzle ke gambar awal & hapus semua testimoni? Semua orang bisa buka keping lagi.")) return;
+    db.collection("events").doc(sess.code).update({ flips: 0, lastFlip: FV().delete(), flipRound: uid().slice(0, 10), voters: {}, voterAlias: {} })
+      .then(function () { toast("Puzzle di-reset ✓"); }).catch(function () { toast("Gagal reset"); });
+  }
+  function revealAll() {
+    if (!sess.isOwner) return;
+    if (!confirm("Ungkap SEMUA keping sekarang (tampilkan lokasi HKA di layar)?")) return;
+    db.collection("events").doc(sess.code).update({ flips: pzTotal() }).then(function () { toast("Lokasi terungkap! 🎉"); }).catch(function () { toast("Gagal"); });
+  }
+  function renderPuzzleSession() {
+    if (sess.isOwner || getMyFlip()) { buildPuzzleLive(); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updatePuzzleLive(d); }); }
+    else renderPuzzleForm();
+  }
+  function renderPuzzleForm() {
+    var ev = sess.event, savedName = ""; try { savedName = localStorage.getItem("query_name") || ""; } catch (e) {}
+    view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Buka Keping") +
+      '<div class="card" style="margin-bottom:14px">' +
+        '<div class="pz-lead">Tulis testimoni / kenangan <b>Hari Keluarga Astra</b> Anda 💙<br/><span class="muted" style="font-weight:600">Setiap testimoni membuka 1 keping puzzle — bersama-sama kita ungkap lokasinya!</span></div>' +
+        '<label class="fld" style="margin-top:14px">Nama Anda <span style="color:#e0245e">*</span></label>' +
+        '<input type="text" id="pzName" maxlength="40" autocomplete="off" placeholder="mis. Budi / Keluarga Santoso" value="' + esc(savedName) + '" oninput="this.style.borderColor=\'\';var e=document.getElementById(\'pzErr\');if(e)e.style.display=\'none\'" />' +
+        '<label class="fld" style="margin-top:12px">Testimoni Anda <span style="color:#e0245e">*</span></label>' +
+        '<textarea id="pzComment" maxlength="180" placeholder="mis. Semoga HKA tahun ini makin seru & penuh kebersamaan!" oninput="this.style.borderColor=\'\';var e=document.getElementById(\'pzErr\');if(e)e.style.display=\'none\'"></textarea>' +
+        '<div id="pzErr" style="display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin-top:8px"></div>' +
+      '</div>' +
+      '<button class="btn block" style="font-size:1.05rem;padding:15px" onclick="QUERY.submitPuzzle()">🧩 Kirim &amp; Buka Keping</button>' +
+      '<p class="muted center" style="margin-top:12px;font-size:.85rem">1 HP membuka 1 keping. Testimonimu akan melintas sekejap di layar utama 💫</p></div>';
+  }
+  function submitPuzzle() {
+    if (sess._flipping) return;
+    var ni = $("pzName"), ci = $("pzComment"), er = $("pzErr");
+    var name = ((ni && ni.value) || "").trim(), comment = ((ci && ci.value) || "").trim();
+    function fail(el, msg) { if (el) { el.style.borderColor = "#e0245e"; el.focus(); } if (er) { er.textContent = msg; er.style.display = "block"; } }
+    if (!name) { fail(ni, "Isi nama Anda dulu ✍️"); return; }
+    if (!comment) { fail(ci, "Tulis testimoni Anda dulu ✍️"); return; }
+    if (getMyFlip()) { toast("HP ini sudah membuka keping 🙌"); renderPuzzleSession(); return; }
+    sess._flipping = true; ensureAudio();
+    var dev = getDeviceId(), round = (sess.event && sess.event.flipRound) || "";
+    try { localStorage.setItem("query_name", name); localStorage.setItem("query_flip_" + sess.code, round); } catch (e) {} setCookie("qf_" + sess.code, round);
+    flipPuzzle(sess.code, dev, round, name, comment).then(function () { toast("Keping terbuka! Terima kasih 💙"); renderPuzzleSession(); })
+      .catch(function (e2) { sess._flipping = false;
+        if (e2 && e2.message === "already-flipped") { toast("HP ini sudah membuka keping 🙌"); renderPuzzleSession(); }
+        else { try { localStorage.removeItem("query_flip_" + sess.code); } catch (e) {} toast("Gagal, coba lagi"); }
+      });
+  }
+  function pzBoardHTML(ev) {
+    var cols = ev.pzCols || 6, rows = ev.pzRows || 4, total = cols * rows, i1 = pzImg(ev, 1), i2 = pzImg(ev, 2), bs = (cols * 100) + "% " + (rows * 100) + "%", cells = "";
+    for (var i = 0; i < total; i++) {
+      var col = i % cols, row = Math.floor(i / cols);
+      var px = (cols > 1 ? col / (cols - 1) * 100 : 0).toFixed(3), py = (rows > 1 ? row / (rows - 1) * 100 : 0).toFixed(3);
+      cells += '<div class="pztile" id="pzt_' + i + '"><div class="pzflip">' +
+        '<div class="pzface pzfront" style="background-image:url(' + esc(i1) + ');background-size:' + bs + ';background-position:' + px + '% ' + py + '%"></div>' +
+        '<div class="pzface pzback" style="background-image:url(' + esc(i2) + ');background-size:' + bs + ';background-position:' + px + '% ' + py + '%"></div>' +
+        '</div></div>';
+    }
+    return '<div class="pzboard" style="grid-template-columns:repeat(' + cols + ',1fr);grid-template-rows:repeat(' + rows + ',1fr)">' + cells + '</div>';
+  }
+  function buildPuzzleLive() {
+    var ev = sess.event;
+    var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
+      (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
+        '<button class="vs-btn" title="Unduh testimoni (Excel)" onclick="QUERY.exportPuzzle()">📥</button>' +
+        '<button class="vs-btn pz-revealbtn" title="Ungkap SEMUA keping" onclick="QUERY.revealAll()">🔓</button>' +
+        '<button class="vs-btn" title="Reset puzzle" onclick="QUERY.resetPuzzle()">🔄</button>' : '') +
+      '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
+    var pill = sess.isOwner ? '<span class="live-pill vs-pill"><span class="dot"></span> Live</span>' : '<span class="live-pill vs-pill">✅ Keping Anda terbuka — terima kasih 💙</span>';
+    view().innerHTML =
+      '<div class="vote-screen vs-pm pz-screen">' +
+        '<div class="pm-orbs"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="o4"></i></div>' +
+        '<div class="vs-top">' +
+          '<span class="vs-logobox">' + qrippleHTML() + '<img class="vs-logo" src="query-logo-white.png?v=43" alt="QUERY" onerror="this.style.display=\'none\'" /></span>' +
+          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '</div></div>' +
+          '<div class="vs-right"><div class="vs-total"><span id="pzcount">0</span>/' + pzTotal(ev) + ' keping</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
+        '</div>' +
+        '<div class="vs-body pz-body">' +
+          '<div class="pz-stage">' + pzBoardHTML(ev) + '<div class="pz-done" id="pzDone"><span>📍 Lokasi Hari Keluarga Astra Terungkap!</span></div></div>' +
+          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div></aside>' : '') +
+        '</div>' +
+        '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk <span class="vtag">QUERY v' + appVersion() + '</span></div>' +
+        shareBoxHTML(sess.code) +
+        '<div class="pz-pops" id="pzPops"></div>' +
+      '</div>';
+    sess.pzRank = pzRankOrder(pzTotal(ev)); sess.lastFlipSeen = (ev.lastFlip && ev.lastFlip.ts) || 0; sess.pzCelebrated = false;
+    updatePuzzleLive(ev);
+  }
+  function updatePuzzleLive(ev) {
+    var total = pzTotal(ev), flips = Math.min(total, ev.flips || 0), rank = sess.pzRank || (sess.pzRank = pzRankOrder(total));
+    for (var i = 0; i < total; i++) { var t = $("pzt_" + i); if (t) t.classList.toggle("on", rank[i] < flips); }
+    var cnt = $("pzcount"); if (cnt) cnt.textContent = flips;
+    var done = $("pzDone");
+    if (total > 0 && flips >= total) { if (done) done.classList.add("show"); if (!sess.pzCelebrated) { sess.pzCelebrated = true; try { confettiBurst(); } catch (e) {} try { playTing(); } catch (e) {} } }
+    else { if (done) done.classList.remove("show"); sess.pzCelebrated = false; }
+    handleFlipPopup(ev.lastFlip);
+  }
+  function handleFlipPopup(lf) {
+    if (!lf || !lf.ts || lf.ts === sess.lastFlipSeen) return;
+    sess.lastFlipSeen = lf.ts; ensureAudio(); try { playTing(); } catch (e) {}
+    var wrap = $("pzPops"); if (!wrap) return;
+    var p = document.createElement("div"); p.className = "pz-pop";
+    p.innerHTML = '<div class="pz-pop-c">“' + esc(lf.c || "") + '”</div><div class="pz-pop-n">— ' + esc(lf.n || "Anonim") + '</div>';
+    p.style.left = (8 + Math.random() * 52).toFixed(1) + "%";
+    wrap.appendChild(p);
+    requestAnimationFrame(function () { p.classList.add("show"); });
+    setTimeout(function () { p.classList.add("fall"); }, 1900);
+    setTimeout(function () { if (p.parentNode) p.remove(); }, 4400);
+  }
+  function exportPuzzle() {
+    var ev = sess.event, va = (ev && ev.voterAlias) || {};
+    var arr = Object.keys(va).map(function (k) { return va[k]; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+    var rows = [[XT("TESTIMONI — " + (ev.eventName || "Hari Keluarga Astra"), 1)],
+      [XT(arr.length + " testimoni · keping terbuka " + Math.min(pzTotal(ev), ev.flips || 0) + "/" + pzTotal(ev), 8)], [],
+      [XT("No", 2), XT("Nama", 2), XT("Testimoni", 2), XT("Waktu", 2)]];
+    arr.forEach(function (r, i) { rows.push([XN(i + 1, 5), XT(r.n || "", 3), XT(r.c || "", 3), XT(r.t ? new Date(r.t).toLocaleString("id-ID") : "", 5)]); });
+    try {
+      var blob = xlsxBlob([{ name: "Testimoni HKA", rows: rows, opt: { cols: [5, 24, 62, 18], freeze: { y: 4 }, merges: ["A1:D1", "A2:D2"] } }]);
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "Testimoni " + String(ev.eventName || "HKA").replace(/[^\w\s-]/g, "").replace(/\s+/g, " ").trim() + ".xlsx"; a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500); toast("Testimoni terunduh 📥");
+    } catch (e) { toast("Gagal membuat Excel"); }
+  }
+  function renderPuzzleBuilder(ev) {
+    puzzleB = { code: ev.code, cols: ev.pzCols || 6, rows: ev.pzRows || 4 };
+    var grids = [[4, 3], [6, 4], [8, 6]];
+    view().innerHTML = '<div class="page">' +
+      '<button class="back-link" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button>' +
+      '<h3 class="sec">🧩 Atur Puzzle Reveal</h3>' +
+      '<p class="muted" style="margin:2px 0 14px">' + esc(ev.eventName) + '</p>' +
+      '<div class="card">' +
+        '<label class="fld">Gambar AWAL (HKA-1) — nama file / URL</label><input type="text" id="pzI1" maxlength="200" value="' + esc(ev.pzImg1 || "hka1.png") + '" placeholder="hka1.png" />' +
+        '<label class="fld" style="margin-top:12px">Gambar REVEAL (HKA-2, berisi lokasi) — nama file / URL</label><input type="text" id="pzI2" maxlength="200" value="' + esc(ev.pzImg2 || "hka2.png") + '" placeholder="hka2.png" />' +
+        '<div class="hintline" style="margin-top:6px">Taruh kedua gambar di folder web (rasio SAMA, mis. 1600×900) lalu tulis nama filenya, atau tempel URL penuh.</div>' +
+        '<label class="fld" style="margin-top:14px">Jumlah keping</label>' +
+        '<div class="seg" id="pzGrid">' + grids.map(function (g) { var act = (g[0] === puzzleB.cols && g[1] === puzzleB.rows) ? " active" : ""; return '<button class="' + act.trim() + '" onclick="QUERY.pzGrid(' + g[0] + ',' + g[1] + ',this)">' + (g[0] * g[1]) + ' keping (' + g[0] + '×' + g[1] + ')</button>'; }).join("") + '</div>' +
+        '<button class="btn block" style="margin-top:16px" onclick="QUERY.savePuzzle()">💾 Simpan</button>' +
+      '</div>' +
+      '<div class="ev-actions" style="margin-top:16px">' +
+        '<button class="btn" onclick="QUERY.go(\'/e/' + ev.code + '\')">📺 Tampilan Live (layar)</button>' +
+        '<button class="btn ghost" onclick="QUERY.share(\'' + ev.code + '\')">QR & Link (untuk peserta)</button>' +
+      '</div>' + shareBoxHTML(ev.code) + '<div style="height:24px"></div></div>';
+  }
+  function pzGrid(c, r, btn) { puzzleB.cols = c; puzzleB.rows = r; var seg = $("pzGrid"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); } if (btn) btn.classList.add("active"); }
+  function savePuzzle() {
+    var u = { pzCols: puzzleB.cols, pzRows: puzzleB.rows, pzImg1: (($("pzI1").value || "").trim() || "hka1.png"), pzImg2: (($("pzI2").value || "").trim() || "hka2.png") };
+    db.collection("events").doc(puzzleB.code).update(u).then(function () { toast("Tersimpan ✓"); }).catch(function () { toast("Gagal simpan"); });
+  }
+
   /* ---------- API global untuk markup onclick ---------- */
   window.QUERY = {
     go: go, seg: seg, logout: function () { clearHost(); setNav(); toast("Keluar"); go("/"); },
@@ -1357,6 +1672,7 @@
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
     flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote, exportVotes: exportVotes,
     pickBracket: pickBracket, submitBracket: submitBracket,
+    submitPuzzle: submitPuzzle, resetPuzzle: resetPuzzle, revealAll: revealAll, exportPuzzle: exportPuzzle, pzGrid: pzGrid, savePuzzle: savePuzzle,
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 

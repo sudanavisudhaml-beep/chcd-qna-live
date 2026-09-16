@@ -522,6 +522,41 @@
     .vpop b{color:var(--astra-dark)}
     @media(max-width:560px){ .vs-title{font-size:1rem} .vname{font-size:.95rem} .vs-logo{height:38px} .vprog{height:22px} .vprog-label{font-size:.8rem} .vpop{font-size:.9rem;white-space:normal;max-width:90vw;text-align:center} }
 
+    /* ===== PUZZLE REVEAL (HKA) ===== */
+    .pz-lead{font-size:1.02rem;line-height:1.5;color:var(--ink)}
+    .pz-screen .vs-body{align-items:stretch}
+    .pz-body{gap:14px}
+    .pz-stage{flex:1;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+    .pzboard{width:100%;max-width:min(100%,calc((100vh - 190px) * 16 / 9));aspect-ratio:16/9;display:grid;gap:3px;
+      border-radius:16px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5);background:rgba(255,255,255,.06);padding:3px;perspective:1400px}
+    .pztile{position:relative;min-width:0;min-height:0}
+    .pzflip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.4,.15,.2,1)}
+    .pztile.on .pzflip{transform:rotateY(180deg)}
+    .pzface{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;background-repeat:no-repeat;border-radius:3px;overflow:hidden}
+    .pzfront{transform:rotateY(0deg)}
+    .pzback{transform:rotateY(180deg)}
+    .pzface::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+    /* Banner "terungkap" */
+    .pz-done{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(24px) scale(.9);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;
+      background:linear-gradient(135deg,#ffe487,#f5a623);color:#5b3b00;font-weight:900;font-size:clamp(.95rem,2.4vw,1.5rem);letter-spacing:.02em;
+      padding:12px 26px;border-radius:999px;box-shadow:0 14px 40px rgba(0,0,0,.45);white-space:nowrap;z-index:3}
+    .pz-done.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+    .pz-revealbtn{background:linear-gradient(135deg,#ffe487,#f5a623) !important;border-color:rgba(255,209,102,.6) !important;color:#5b3b00 !important}
+    /* Testimoni melintas lalu jatuh & hilang */
+    .pz-pops{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4}
+    .pz-pop{position:absolute;top:16%;max-width:min(340px,72vw);background:rgba(255,255,255,.97);color:var(--ink);border-radius:16px;border-left:5px solid var(--astra);
+      padding:12px 16px;box-shadow:0 16px 40px rgba(0,0,0,.32);opacity:0;transform:translateY(-18px) scale(.9);transition:opacity .4s ease,transform .5s cubic-bezier(.2,1.4,.4,1)}
+    .pz-pop.show{opacity:1;transform:translateY(0) scale(1)}
+    .pz-pop.fall{opacity:0;transform:translateY(74vh) rotate(6deg) scale(.96);transition:opacity 2.2s ease-in,transform 2.4s cubic-bezier(.5,.05,.8,.6)}
+    .pz-pop-c{font-size:.98rem;font-weight:700;line-height:1.4}
+    .pz-pop-n{font-size:.8rem;color:var(--muted);font-weight:700;margin-top:5px}
+    @media(max-width:680px){
+      .pz-screen .vs-body{flex-direction:column;gap:9px}
+      .pzboard{max-width:100%;max-height:56vh}
+      .pz-pop{max-width:82vw}
+      .pz-pop-c{font-size:.9rem}
+    }
+
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
@@ -553,10 +588,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=46"></script>
+  <script src="config.js?v=47"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=46"></script>
+  <script src="app.js?v=47"></script>
   <script>App.boot();</script>
 </body>
 </html>
