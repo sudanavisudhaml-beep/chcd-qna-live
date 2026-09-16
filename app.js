@@ -1637,7 +1637,7 @@
   }
   function renderPuzzleBuilder(ev) {
     puzzleB = { code: ev.code, cols: ev.pzCols || 6, rows: ev.pzRows || 4 };
-    var grids = [[4, 3], [6, 4], [8, 6]];
+    var grids = [[6, 4], [10, 8], [16, 12], [25, 16]];
     view().innerHTML = '<div class="page">' +
       '<button class="back-link" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button>' +
       '<h3 class="sec">🧩 Atur Puzzle Reveal</h3>' +
@@ -1646,16 +1646,37 @@
         '<label class="fld">Gambar AWAL (HKA-1) — nama file / URL</label><input type="text" id="pzI1" maxlength="200" value="' + esc(ev.pzImg1 || "hka1.png") + '" placeholder="hka1.png" />' +
         '<label class="fld" style="margin-top:12px">Gambar REVEAL (HKA-2, berisi lokasi) — nama file / URL</label><input type="text" id="pzI2" maxlength="200" value="' + esc(ev.pzImg2 || "hka2.png") + '" placeholder="hka2.png" />' +
         '<div class="hintline" style="margin-top:6px">Taruh kedua gambar di folder web (rasio SAMA, mis. 1600×900) lalu tulis nama filenya, atau tempel URL penuh.</div>' +
-        '<label class="fld" style="margin-top:14px">Jumlah keping</label>' +
-        '<div class="seg" id="pzGrid">' + grids.map(function (g) { var act = (g[0] === puzzleB.cols && g[1] === puzzleB.rows) ? " active" : ""; return '<button class="' + act.trim() + '" onclick="QUERY.pzGrid(' + g[0] + ',' + g[1] + ',this)">' + (g[0] * g[1]) + ' keping (' + g[0] + '×' + g[1] + ')</button>'; }).join("") + '</div>' +
+        '<label class="fld" style="margin-top:14px">Jumlah keping — pilih cepat atau isi manual</label>' +
+        '<div class="seg" id="pzGrid" style="flex-wrap:wrap">' + grids.map(function (g) { var act = (g[0] === puzzleB.cols && g[1] === puzzleB.rows) ? " active" : ""; return '<button class="' + act.trim() + '" onclick="QUERY.pzGrid(' + g[0] + ',' + g[1] + ',this)">' + (g[0] * g[1]) + '</button>'; }).join("") + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+          '<input type="number" id="pzC" min="2" max="40" value="' + puzzleB.cols + '" oninput="QUERY.pzCustom()" style="width:74px;text-align:center" /> <span class="muted">kolom</span>' +
+          '<span class="muted" style="font-weight:800">×</span>' +
+          '<input type="number" id="pzR" min="2" max="40" value="' + puzzleB.rows + '" oninput="QUERY.pzCustom()" style="width:74px;text-align:center" /> <span class="muted">baris</span>' +
+          '<span class="muted" style="margin-left:auto;font-weight:700">= <b id="pzTot" style="color:var(--astra-dark);font-size:1.05rem">' + (puzzleB.cols * puzzleB.rows) + '</b> keping</span>' +
+        '</div>' +
+        '<div class="hintline" id="pzGridHint" style="margin-top:8px"></div>' +
         '<button class="btn block" style="margin-top:16px" onclick="QUERY.savePuzzle()">💾 Simpan</button>' +
       '</div>' +
       '<div class="ev-actions" style="margin-top:16px">' +
         '<button class="btn" onclick="QUERY.go(\'/e/' + ev.code + '\')">📺 Tampilan Live (layar)</button>' +
         '<button class="btn ghost" onclick="QUERY.share(\'' + ev.code + '\')">QR & Link (untuk peserta)</button>' +
       '</div>' + shareBoxHTML(ev.code) + '<div style="height:24px"></div></div>';
+    pzUpdTot();
   }
-  function pzGrid(c, r, btn) { puzzleB.cols = c; puzzleB.rows = r; var seg = $("pzGrid"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); } if (btn) btn.classList.add("active"); }
+  function pzClamp(n) { n = parseInt(n, 10); if (!(n >= 2)) n = 2; if (n > 40) n = 40; return n; }
+  function pzUpdTot() {
+    var t = puzzleB.cols * puzzleB.rows, el = $("pzTot"); if (el) el.textContent = t;
+    var h = $("pzGridHint"); if (h) h.innerHTML = t > 150
+      ? "⚠️ " + t + " keping itu banyak: butuh ~" + t + " peserta agar penuh sendiri — pakai tombol <b>🔓 Ungkap Semua</b> untuk klimaks. Layar/HP mungkin sedikit lebih berat."
+      : "Tiap peserta membuka 1 keping. Total " + t + " keping.";
+  }
+  function pzSyncInputs() { var c = $("pzC"), r = $("pzR"); if (c) c.value = puzzleB.cols; if (r) r.value = puzzleB.rows; }
+  function pzGrid(c, r, btn) { puzzleB.cols = c; puzzleB.rows = r; var seg = $("pzGrid"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); } if (btn) btn.classList.add("active"); pzSyncInputs(); pzUpdTot(); }
+  function pzCustom() {
+    puzzleB.cols = pzClamp($("pzC").value); puzzleB.rows = pzClamp($("pzR").value);
+    var seg = $("pzGrid"); if (seg) { var bs = seg.getElementsByTagName("button"); for (var i = 0; i < bs.length; i++) bs[i].classList.remove("active"); }
+    pzUpdTot();
+  }
   function savePuzzle() {
     var u = { pzCols: puzzleB.cols, pzRows: puzzleB.rows, pzImg1: (($("pzI1").value || "").trim() || "hka1.png"), pzImg2: (($("pzI2").value || "").trim() || "hka2.png") };
     db.collection("events").doc(puzzleB.code).update(u).then(function () { toast("Tersimpan ✓"); }).catch(function () { toast("Gagal simpan"); });
@@ -1672,7 +1693,7 @@
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
     flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote, exportVotes: exportVotes,
     pickBracket: pickBracket, submitBracket: submitBracket,
-    submitPuzzle: submitPuzzle, resetPuzzle: resetPuzzle, revealAll: revealAll, exportPuzzle: exportPuzzle, pzGrid: pzGrid, savePuzzle: savePuzzle,
+    submitPuzzle: submitPuzzle, resetPuzzle: resetPuzzle, revealAll: revealAll, exportPuzzle: exportPuzzle, pzGrid: pzGrid, pzCustom: pzCustom, savePuzzle: savePuzzle,
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 
