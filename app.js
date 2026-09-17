@@ -1047,14 +1047,17 @@
      VOTE — pilih opsi (mis. negara), bendera membesar seiring vote
      ============================================================ */
   function flagUrl(code) { return "https://flagcdn.com/w320/" + String(code || "").trim().toLowerCase() + ".png"; }
-  function voteQrHTML(ev) {
+  function voteQrHTML(ev, title) {
     var link = sessionURL(ev.code);
-    var qr = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(link);
+    var api = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(link);
+    // ev.qrImg = file QR statis di situs sendiri (tidak bergantung layanan luar saat hari-H); layanan luar jadi cadangan
+    var src = ev.qrImg ? esc(ev.qrImg) : api;
+    var fb = ev.qrImg ? ' onerror="this.onerror=null;this.src=\'' + api + '\'"' : '';
     return '<div class="vqr">' +
       '<div class="vqr-arrow">👇</div>' +
       '<div class="vqr-card">' +
-        '<div class="vqr-title">SCAN &amp; VOTE!</div>' +
-        '<img class="vqr-img" src="' + qr + '" alt="QR Vote" />' +
+        '<div class="vqr-title">' + (title || 'SCAN &amp; VOTE!') + '</div>' +
+        '<img class="vqr-img" src="' + src + '"' + fb + ' alt="QR" />' +
         '<div class="vqr-sub">Arahkan kamera HP<br/>Kode <b>' + esc(ev.code) + '</b></div>' +
       '</div></div>';
   }
@@ -1570,7 +1573,9 @@
         '<div class="pzface pzback" style="background-image:url(' + esc(i2) + ');background-size:' + bs + ';background-position:' + px + '% ' + py + '%"></div>' +
         '</div></div>';
     }
-    return '<div class="pzboard" style="grid-template-columns:repeat(' + cols + ',1fr);grid-template-rows:repeat(' + rows + ',1fr)">' + cells + '</div>';
+    // Jarak kisi mengecil saat keping banyak (3px di 400 keping = jaring putih yang menutupi gambar)
+    var gp = cols >= 16 ? 1 : (cols >= 10 ? 2 : 3);
+    return '<div class="pzboard' + (cols >= 16 ? ' dense' : '') + '" style="gap:' + gp + 'px;padding:' + gp + 'px;grid-template-columns:repeat(' + cols + ',1fr);grid-template-rows:repeat(' + rows + ',1fr)">' + cells + '</div>';
   }
   function buildPuzzleLive() {
     var ev = sess.event;
@@ -1591,7 +1596,7 @@
         '</div>' +
         '<div class="vs-body pz-body">' +
           '<div class="pz-stage">' + pzBoardHTML(ev) + '<div class="pz-done" id="pzDone"><span>📍 Lokasi Hari Keluarga Astra Terungkap!</span></div></div>' +
-          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev) + '</div></aside>' : '') +
+          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev, 'SCAN &amp; TULIS TESTIMONI') + '</div></aside>' : '') +
         '</div>' +
         '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk <span class="vtag">QUERY v' + appVersion() + '</span></div>' +
         shareBoxHTML(sess.code) +
