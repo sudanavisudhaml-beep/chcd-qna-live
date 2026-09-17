@@ -324,7 +324,6 @@
       if (!events.length) { el.innerHTML = '<div class="empty">Belum ada event. Buat event pertama Anda di atas 👆</div>'; return; }
       el.innerHTML = events.map(function (ev) {
         var link = sessionURL(ev.code);
-        var qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
         var isSurvey = ev.type === "survey", isVote = ev.type === "vote", isPuzzle = ev.type === "puzzle";
         var typeBadge = isVote
           ? '<span class="badge" style="background:#e7f6ec;color:#0f7a37">🗳️ Vote</span>'
@@ -354,7 +353,7 @@
             '<button class="btn ghost small" onclick="QUERY.copy(\'' + esc(link) + '\')">Salin Link</button>' +
             '<button class="btn ghost small danger" onclick="QUERY.delEvent(\'' + ev.code + '\')">Hapus</button>' +
           '</div>' +
-          '<div class="share-box" id="share_' + ev.code + '"><img alt="QR" src="' + qr + '" /><div class="lnk">' + esc(link) + '</div></div>' +
+          shareBoxHTML(ev.code) +
         '</div>';
       }).join("");
     }).catch(function (e) { var el = $("evList"); if (el) el.innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>'; });
@@ -574,9 +573,20 @@
       '<span class="event">' + esc(ev.eventName) + '</span>' +
       (ev.materi ? '<span class="materi">' + esc(ev.materi) + '</span>' : '') + '</div>';
   }
+  // QR dibuat lokal di browser (qrcode-generator, MIT, file qrcode.js di situs sendiri): tak bergantung layanan luar.
+  // Layanan luar hanya cadangan bila qrcode.js gagal dimuat (mis. cache lama).
+  function qrSrc(text) {
+    try { var q = qrcode(0, "M"); q.addData(text); q.make(); return q.createDataURL(8); }
+    catch (e) { return "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(text); }
+  }
   function shareBoxHTML(code) {
-    var link = sessionURL(code), qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
-    return '<div class="share-box" id="share_' + code + '"><img alt="QR" src="' + qr + '" /><div class="lnk">' + esc(link) + '</div></div>';
+    var link = sessionURL(code);
+    return '<div class="share-box" id="share_' + code + '">' +
+      '<button class="share-x" title="Tutup (Esc)" onclick="QUERY.share(\'' + code + '\')">✕</button>' +
+      '<img alt="QR" src="' + qrSrc(link) + '" />' +
+      '<div class="lnk">' + esc(link) + '</div>' +
+      '<button class="btn small" style="margin-top:10px" onclick="QUERY.copy(\'' + esc(link) + '\')">📋 Salin Link</button>' +
+    '</div>';
   }
 
   /* ----- Builder ----- */
@@ -750,10 +760,11 @@
   function fillAgain() { localStorage.removeItem("query_sub_" + sess.code); sess.name = localStorage.getItem("query_name") || ""; renderSurveyForm(); }
 
   function resultsShareBoxHTML(code) {
-    var link = resultsURL(code), qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=" + encodeURIComponent(link);
+    var link = resultsURL(code);
     return '<div class="share-box rshare" id="rshare_' + code + '">' +
+      '<button class="share-x" title="Tutup" onclick="QUERY.shareResults(\'' + code + '\')">✕</button>' +
       '<div class="rshare-note">👁️ Link ini membuka <b>halaman Hasil (read-only)</b> — atasan bisa lihat tanpa login &amp; tanpa masuk form. Siapa pun yang memegang link bisa melihat, jadi bagikan seperlunya.</div>' +
-      '<img alt="QR Hasil" src="' + qr + '" />' +
+      '<img alt="QR Hasil" src="' + qrSrc(link) + '" />' +
       '<div class="lnk">' + esc(link) + '</div>' +
       '<button class="btn small block" style="margin-top:10px" onclick="QUERY.copy(\'' + link + '\')">📋 Salin Link Hasil</button>' +
     '</div>';
@@ -1048,12 +1059,7 @@
      ============================================================ */
   function flagUrl(code) { return "https://flagcdn.com/w320/" + String(code || "").trim().toLowerCase() + ".png"; }
   // <img> QR: ev.qrImg = file statis di situs sendiri (tak bergantung layanan luar saat hari-H); layanan luar jadi cadangan
-  function qrImgTag(ev, cls) {
-    var api = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(sessionURL(ev.code));
-    var src = ev.qrImg ? esc(ev.qrImg) : api;
-    var fb = ev.qrImg ? ' onerror="this.onerror=null;this.src=\'' + api + '\'"' : '';
-    return '<img class="' + cls + '" src="' + src + '"' + fb + ' alt="QR" />';
-  }
+  function qrImgTag(ev, cls) { return '<img class="' + cls + '" src="' + qrSrc(sessionURL(ev.code)) + '" alt="QR" />'; }
   function voteQrHTML(ev, title) {
     return '<div class="vqr">' +
       '<div class="vqr-arrow">👇</div>' +
@@ -1722,6 +1728,11 @@
 
   function appVersion() { return (window.APP && window.APP.APP_VERSION) || "?"; }
   function paintVersion() { var el = $("appVer"); if (el) el.textContent = "QUERY v" + appVersion(); }
-  function boot() { paintVersion(); window.addEventListener("hashchange", route); route(); }
+  function boot() {
+    paintVersion(); window.addEventListener("hashchange", route);
+    // Esc menutup popup QR & Link yang sedang terbuka
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") [].forEach.call(document.querySelectorAll(".share-box.open"), function (b) { b.classList.remove("open"); }); });
+    route();
+  }
   window.App = { boot: boot };
 })();

@@ -168,9 +168,11 @@
     .ev-card .em{font-size:.85rem;color:var(--muted);margin-top:3px}
     .ev-code{display:inline-block;margin-top:10px;font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.16em;background:var(--astra-soft);color:var(--astra-dark);padding:6px 13px;border-radius:9px;font-size:.98rem}
     .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
-    .share-box{margin-top:13px;padding:14px;border:1px dashed #bcd6f5;background:var(--astra-soft2);border-radius:14px;text-align:center;display:none}
+    .share-box{position:relative;margin-top:13px;padding:14px;border:1px dashed #bcd6f5;background:var(--astra-soft2);border-radius:14px;text-align:center;display:none}
     .share-box.open{display:block}
-    .share-box img{width:172px;height:172px;background:#fff;border-radius:10px;padding:6px}
+    .share-box img{width:172px;height:172px;background:#fff;border-radius:10px;padding:6px;image-rendering:pixelated}
+    .share-x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--muted);font-size:.85rem;cursor:pointer;line-height:1}
+    .share-x:hover{background:var(--astra-soft);color:var(--ink)}
     .share-box .lnk{font-size:.76rem;color:var(--astra-dark);word-break:break-all;margin-top:9px;font-weight:600}
     .rshare-note{font-size:.82rem;line-height:1.45;color:var(--muted);text-align:left;margin-bottom:12px}
     .rshare-note b{color:var(--ink)}
@@ -256,7 +258,10 @@
     .vs-ctrls{display:flex;gap:6px}
     .vs-btn{width:36px;height:34px;border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-size:1rem;box-shadow:var(--shadow-sm)}
     .vs-btn:hover{background:var(--astra-soft2)}
-    .vote-screen .share-box.open{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.32);border-style:solid}
+    /* Popup QR & Link di layar live: di tengah, latar digelapkan agar fokus; QR besar supaya bisa difoto dari layar */
+    .vote-screen .share-box.open{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;background:#fff;border-style:solid;
+      padding:22px 26px 18px;max-width:92vw;box-shadow:0 0 0 100vmax rgba(5,10,20,.62),0 20px 60px rgba(0,0,0,.32)}
+    .vote-screen .share-box.open img{width:min(320px,58vh);height:min(320px,58vh)}
     .vs-grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px}
     .vlive-1{grid-template-columns:1fr;grid-template-rows:1fr}
     .vlive-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
@@ -631,10 +636,11 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=52"></script>
+  <script src="config.js?v=53"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=52"></script>
+  <script src="qrcode.js?v=1"></script>
+  <script src="app.js?v=53"></script>
   <script>App.boot();</script>
 </body>
 </html>
