@@ -566,6 +566,40 @@
       .pz-pop-c{font-size:.9rem}
     }
 
+    /* ===== Puzzle layar penuh: ±90% gambar, 10% kolom kanan (logo, penghitung, QR, tombol) ===== */
+    .pz-full{padding:.6vh .5vw}
+    .pz-layout{flex:1;min-height:0;display:flex;gap:.6vw;align-items:stretch}
+    .pz-full .pz-stage{flex:1 1 90%;min-width:0;min-height:0}
+    .pz-full .pzboard{width:100%;max-width:min(100%,calc((100vh - 1.2vh) * 16 / 9));border-radius:12px}
+    .pz-rail{flex:0 0 10%;min-width:150px;min-height:0;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:1.2vh;
+      padding:1.4vh .5vw;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    .pz-rail-top,.pz-rail-bot{display:flex;flex-direction:column;align-items:center;gap:1vh;width:100%}
+    .pz-logo{display:block;width:84%}
+    .pz-logo img{width:100%;height:auto;display:block;filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
+    .pz-count{color:#fff;text-align:center;line-height:1}
+    .pz-count b{display:block;font-size:clamp(1.4rem,2.2vw,2.8rem);font-weight:900;font-variant-numeric:tabular-nums}
+    .pz-count span{font-size:clamp(.62rem,.75vw,.9rem);color:#9fb2d0;font-weight:700}
+    .pz-mine{font-size:.72rem;font-weight:800;color:#7ef0a6;text-align:center;line-height:1.2}
+    .pz-qr{width:100%;background:#fff;border-radius:12px;padding:1vh .5vw;text-align:center;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+    .pz-qr-t{font-weight:900;color:var(--astra-dark);font-size:clamp(.62rem,.8vw,.95rem);letter-spacing:.02em}
+    .pz-qr-q{font-weight:800;color:var(--astra);font-size:clamp(.58rem,.7vw,.85rem);line-height:1.15;margin:2px 0 .6vh}
+    .pz-qr-img{width:100%;height:auto;aspect-ratio:1;display:block;border-radius:6px}
+    .pz-ctrls{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+    .pz-ctrls .vs-btn{width:32px;height:30px;font-size:.88rem}
+    .pz-rail .vtag{font-size:.55rem;padding:1px 6px;margin:0;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2)}
+    .pz-full .pz-done{bottom:2.5vh}
+    @media(max-width:680px){
+      .pz-layout{flex-direction:column;gap:8px}
+      .pz-rail{order:-1;flex:0 0 auto;min-width:0;width:100%;flex-direction:row;justify-content:space-between;padding:8px 10px}
+      .pz-rail-top{flex-direction:row;width:auto;gap:10px}
+      .pz-rail-bot{flex-direction:row;width:auto}
+      .pz-logo{width:92px}
+      .pz-count b{display:inline;font-size:1.2rem}
+      .pz-qr,.pz-rail .vtag{display:none}
+      .pz-full .pzboard{max-width:100%}
+    }
+
     .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:999px;
       font-size:.9rem;font-weight:700;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
@@ -597,10 +631,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=51"></script>
+  <script src="config.js?v=52"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=51"></script>
+  <script src="app.js?v=52"></script>
   <script>App.boot();</script>
 </body>
 </html>

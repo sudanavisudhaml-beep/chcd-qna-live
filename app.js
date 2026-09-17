@@ -1047,17 +1047,19 @@
      VOTE — pilih opsi (mis. negara), bendera membesar seiring vote
      ============================================================ */
   function flagUrl(code) { return "https://flagcdn.com/w320/" + String(code || "").trim().toLowerCase() + ".png"; }
-  function voteQrHTML(ev, title) {
-    var link = sessionURL(ev.code);
-    var api = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(link);
-    // ev.qrImg = file QR statis di situs sendiri (tidak bergantung layanan luar saat hari-H); layanan luar jadi cadangan
+  // <img> QR: ev.qrImg = file statis di situs sendiri (tak bergantung layanan luar saat hari-H); layanan luar jadi cadangan
+  function qrImgTag(ev, cls) {
+    var api = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" + encodeURIComponent(sessionURL(ev.code));
     var src = ev.qrImg ? esc(ev.qrImg) : api;
     var fb = ev.qrImg ? ' onerror="this.onerror=null;this.src=\'' + api + '\'"' : '';
+    return '<img class="' + cls + '" src="' + src + '"' + fb + ' alt="QR" />';
+  }
+  function voteQrHTML(ev, title) {
     return '<div class="vqr">' +
       '<div class="vqr-arrow">👇</div>' +
       '<div class="vqr-card">' +
         '<div class="vqr-title">' + (title || 'SCAN &amp; VOTE!') + '</div>' +
-        '<img class="vqr-img" src="' + src + '"' + fb + ' alt="QR" />' +
+        qrImgTag(ev, "vqr-img") +
         '<div class="vqr-sub">Arahkan kamera HP<br/>Kode <b>' + esc(ev.code) + '</b></div>' +
       '</div></div>';
   }
@@ -1583,31 +1585,42 @@
   }
   function buildPuzzleLive() {
     var ev = sess.event;
-    var ctrls = '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
+    var ctrls = '<button class="vs-btn" title="Layar penuh" onclick="QUERY.pzFullscreen()">⛶</button>' +
+      '<button class="vs-btn" title="Aktifkan suara" onclick="QUERY.enableSound()">🔔</button>' +
       (sess.isOwner ? '<button class="vs-btn" title="QR & Link" onclick="QUERY.share(\'' + sess.code + '\')">🔗</button>' +
-        '<button class="vs-btn" title="Unduh testimoni (Excel)" onclick="QUERY.exportPuzzle()">📥</button>' +
+        '<button class="vs-btn" title="Unduh jawaban (Excel)" onclick="QUERY.exportPuzzle()">📥</button>' +
         '<button class="vs-btn pz-revealbtn" title="Ungkap SEMUA keping" onclick="QUERY.revealAll()">🔓</button>' +
         '<button class="vs-btn" title="Reset puzzle" onclick="QUERY.resetPuzzle()">🔄</button>' : '') +
       '<button class="vs-btn" title="Keluar" onclick="QUERY.go(\'' + (sess.isOwner ? '/dashboard' : '/e/' + sess.code) + '\')">✕</button>';
-    var pill = sess.isOwner ? '<span class="live-pill vs-pill"><span class="dot"></span> Live</span>' : '<span class="live-pill vs-pill">✅ Keping Anda terbuka — terima kasih 💙</span>';
+    // Tata letak layar penuh: 90% gambar puzzle, 10% kolom kanan (logo, penghitung, QR, tombol)
     view().innerHTML =
-      '<div class="vote-screen vs-pm pz-screen">' +
+      '<div class="vote-screen vs-pm pz-screen pz-full">' +
         '<div class="pm-orbs"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="o4"></i></div>' +
-        '<div class="vs-top">' +
-          '<span class="vs-logobox">' + qrippleHTML() + '<img class="vs-logo" src="query-logo-white.png?v=43" alt="QUERY" onerror="this.style.display=\'none\'" /></span>' +
-          '<div class="vs-mid"><div class="vs-title">' + esc(ev.eventName) + '</div><div class="vs-chips">' + pill + '</div></div>' +
-          '<div class="vs-right"><div class="vs-total"><span id="pzcount">0</span>/' + pzTotal(ev) + ' keping</div><div class="vs-ctrls">' + ctrls + '</div></div>' +
-        '</div>' +
-        '<div class="vs-body pz-body">' +
+        '<div class="pz-layout">' +
           '<div class="pz-stage">' + pzBoardHTML(ev) + '<div class="pz-done" id="pzDone"><span>📍 Lokasi Hari Keluarga Astra Terungkap!</span></div></div>' +
-          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev, 'SCAN &amp; JAWAB<br/><span class="vqr-q">' + esc(pzPrompt(ev)) + '</span>') + '</div></aside>' : '') +
+          '<aside class="pz-rail">' +
+            '<div class="pz-rail-top">' +
+              '<span class="qlogo-wrap pz-logo"><span class="qripple"><i></i><i></i><i></i></span><img src="query-logo-white.png?v=43" alt="QUERY" onerror="this.style.display=\'none\'" /></span>' +
+              '<div class="pz-count"><b id="pzcount">0</b><span>/' + pzTotal(ev) + ' keping</span></div>' +
+              (sess.isOwner ? '' : '<div class="pz-mine">✅ Keping Anda terbuka</div>') +
+            '</div>' +
+            (sess.isOwner ? '<div class="pz-qr"><div class="pz-qr-t">SCAN &amp; JAWAB</div><div class="pz-qr-q">' + esc(pzPrompt(ev)) + '</div>' + qrImgTag(ev, "pz-qr-img") + '</div>' : '') +
+            '<div class="pz-rail-bot"><div class="pz-ctrls">' + ctrls + '</div><span class="vtag">QUERY v' + appVersion() + '</span></div>' +
+          '</aside>' +
         '</div>' +
-        '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk <span class="vtag">QUERY v' + appVersion() + '</span></div>' +
         shareBoxHTML(sess.code) +
         '<div class="pz-pops" id="pzPops"></div>' +
       '</div>';
     sess.pzRank = pzRankOrder(pzTotal(ev)); sess.lastFlipSeen = (ev.lastFlip && ev.lastFlip.ts) || 0; sess.pzCelebrated = false;
     updatePuzzleLive(ev);
+  }
+  // Layar penuh browser (sembunyikan tab & address bar di proyektor). Butuh klik pengguna, jadi lewat tombol.
+  function pzFullscreen() {
+    var d = document, el = d.documentElement;
+    try {
+      if (!(d.fullscreenElement || d.webkitFullscreenElement)) { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); }
+      else { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
+    } catch (e) { toast("Tekan F11 untuk layar penuh"); }
   }
   function updatePuzzleLive(ev) {
     var total = pzTotal(ev), flips = Math.min(total, ev.flips || 0), rank = sess.pzRank || (sess.pzRank = pzRankOrder(total));
@@ -1703,7 +1716,7 @@
     pickRate: pickRate, submitSurvey: submitSurvey, exportSurvey: exportSurvey, fillAgain: fillAgain,
     flagPrev: flagPrev, addTeam: addTeam, delTeam: delTeam, moveTeam: moveTeam, vote: doVote, resetVote: resetVote, exportVotes: exportVotes,
     pickBracket: pickBracket, submitBracket: submitBracket,
-    submitPuzzle: submitPuzzle, resetPuzzle: resetPuzzle, revealAll: revealAll, exportPuzzle: exportPuzzle, pzGrid: pzGrid, pzCustom: pzCustom, savePuzzle: savePuzzle,
+    submitPuzzle: submitPuzzle, resetPuzzle: resetPuzzle, revealAll: revealAll, exportPuzzle: exportPuzzle, pzGrid: pzGrid, pzCustom: pzCustom, savePuzzle: savePuzzle, pzFullscreen: pzFullscreen,
     enableSound: function () { ensureAudio(); playTing(); toast("🔔 Suara aktif"); }
   };
 
