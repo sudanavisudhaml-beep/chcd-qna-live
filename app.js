@@ -1532,27 +1532,31 @@
     if (sess.isOwner || getMyFlip()) { buildPuzzleLive(); sess.unsub = subscribeEvent(sess.code, function (d) { sess.event = d; updatePuzzleLive(d); }); }
     else renderPuzzleForm();
   }
+  // Pertanyaan untuk peserta disimpan per event (pzPrompt), bukan ditulis mati di kode
+  function pzPrompt(ev) { ev = ev || sess.event || {}; return String(ev.pzPrompt || "Tulis pesan Anda").trim(); }
   function renderPuzzleForm() {
     var ev = sess.event, savedName = ""; try { savedName = localStorage.getItem("query_name") || ""; } catch (e) {}
+    var clr = 'oninput="this.style.borderColor=\'\';var e=document.getElementById(\'pzErr\');if(e)e.style.display=\'none\'"';
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Buka Keping") +
       '<div class="card" style="margin-bottom:14px">' +
-        '<div class="pz-lead">Tulis testimoni / kenangan <b>Hari Keluarga Astra</b> Anda 💙<br/><span class="muted" style="font-weight:600">Setiap testimoni membuka 1 keping puzzle — bersama-sama kita ungkap lokasinya!</span></div>' +
-        '<label class="fld" style="margin-top:14px">Nama Anda <span style="color:#e0245e">*</span></label>' +
-        '<input type="text" id="pzName" maxlength="40" autocomplete="off" placeholder="mis. Budi / Keluarga Santoso" value="' + esc(savedName) + '" oninput="this.style.borderColor=\'\';var e=document.getElementById(\'pzErr\');if(e)e.style.display=\'none\'" />' +
-        '<label class="fld" style="margin-top:12px">Testimoni Anda <span style="color:#e0245e">*</span></label>' +
-        '<textarea id="pzComment" maxlength="180" placeholder="mis. Semoga HKA tahun ini makin seru & penuh kebersamaan!" oninput="this.style.borderColor=\'\';var e=document.getElementById(\'pzErr\');if(e)e.style.display=\'none\'"></textarea>' +
+        '<div class="pz-q">' + esc(pzPrompt(ev)) + '</div>' +
+        '<div class="pz-lead muted center" style="font-weight:600;font-size:.9rem">Setiap jawaban membuka 1 keping puzzle. Bersama-sama kita ungkap lokasinya!</div>' +
+        '<label class="fld" style="margin-top:14px">Jawaban Anda <span style="color:#e0245e">*</span></label>' +
+        '<input type="text" id="pzComment" maxlength="60" autocomplete="off" placeholder="mis. Juara · Keluarga · Inspiratif" ' + clr + ' />' +
+        '<label class="fld" style="margin-top:12px">Nama Anda <span style="color:#e0245e">*</span></label>' +
+        '<input type="text" id="pzName" maxlength="40" autocomplete="off" placeholder="mis. Budi / Keluarga Santoso" value="' + esc(savedName) + '" ' + clr + ' />' +
         '<div id="pzErr" style="display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin-top:8px"></div>' +
       '</div>' +
       '<button class="btn block" style="font-size:1.05rem;padding:15px" onclick="QUERY.submitPuzzle()">🧩 Kirim &amp; Buka Keping</button>' +
-      '<p class="muted center" style="margin-top:12px;font-size:.85rem">1 HP membuka 1 keping. Testimonimu akan melintas sekejap di layar utama 💫</p></div>';
+      '<p class="muted center" style="margin-top:12px;font-size:.85rem">1 HP membuka 1 keping. Jawabanmu akan melintas sekejap di layar utama 💫</p></div>';
   }
   function submitPuzzle() {
     if (sess._flipping) return;
     var ni = $("pzName"), ci = $("pzComment"), er = $("pzErr");
     var name = ((ni && ni.value) || "").trim(), comment = ((ci && ci.value) || "").trim();
     function fail(el, msg) { if (el) { el.style.borderColor = "#e0245e"; el.focus(); } if (er) { er.textContent = msg; er.style.display = "block"; } }
+    if (!comment) { fail(ci, "Isi jawaban Anda dulu ✍️"); return; }
     if (!name) { fail(ni, "Isi nama Anda dulu ✍️"); return; }
-    if (!comment) { fail(ci, "Tulis testimoni Anda dulu ✍️"); return; }
     if (getMyFlip()) { toast("HP ini sudah membuka keping 🙌"); renderPuzzleSession(); return; }
     sess._flipping = true; ensureAudio();
     var dev = getDeviceId(), round = (sess.event && sess.event.flipRound) || "";
@@ -1596,7 +1600,7 @@
         '</div>' +
         '<div class="vs-body pz-body">' +
           '<div class="pz-stage">' + pzBoardHTML(ev) + '<div class="pz-done" id="pzDone"><span>📍 Lokasi Hari Keluarga Astra Terungkap!</span></div></div>' +
-          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev, 'SCAN &amp; TULIS TESTIMONI') + '</div></aside>' : '') +
+          (sess.isOwner ? '<aside class="vs-side"><div class="vs-slot">' + voteQrHTML(ev, 'SCAN &amp; JAWAB<br/><span class="vqr-q">' + esc(pzPrompt(ev)) + '</span>') + '</div></aside>' : '') +
         '</div>' +
         '<div class="vs-copy">System Development — GA Dept · © 2026 PT Astra International Tbk <span class="vtag">QUERY v' + appVersion() + '</span></div>' +
         shareBoxHTML(sess.code) +
@@ -1618,7 +1622,7 @@
     if (!lf || !lf.ts || lf.ts === sess.lastFlipSeen) return;
     sess.lastFlipSeen = lf.ts; ensureAudio(); try { playTing(); } catch (e) {}
     var wrap = $("pzPops"); if (!wrap) return;
-    var p = document.createElement("div"); p.className = "pz-pop";
+    var p = document.createElement("div"); p.className = "pz-pop" + (String(lf.c || "").length <= 24 ? " short" : "");
     p.innerHTML = '<div class="pz-pop-c">“' + esc(lf.c || "") + '”</div><div class="pz-pop-n">— ' + esc(lf.n || "Anonim") + '</div>';
     p.style.left = (8 + Math.random() * 52).toFixed(1) + "%";
     wrap.appendChild(p);
@@ -1629,9 +1633,9 @@
   function exportPuzzle() {
     var ev = sess.event, va = (ev && ev.voterAlias) || {};
     var arr = Object.keys(va).map(function (k) { return va[k]; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
-    var rows = [[XT("TESTIMONI — " + (ev.eventName || "Hari Keluarga Astra"), 1)],
-      [XT(arr.length + " testimoni · keping terbuka " + Math.min(pzTotal(ev), ev.flips || 0) + "/" + pzTotal(ev), 8)], [],
-      [XT("No", 2), XT("Nama", 2), XT("Testimoni", 2), XT("Waktu", 2)]];
+    var rows = [[XT("JAWABAN PESERTA — " + (ev.eventName || "Hari Keluarga Astra"), 1)],
+      [XT("Pertanyaan: " + pzPrompt(ev) + " · " + arr.length + " jawaban · keping terbuka " + Math.min(pzTotal(ev), ev.flips || 0) + "/" + pzTotal(ev), 8)], [],
+      [XT("No", 2), XT("Nama", 2), XT(pzPrompt(ev), 2), XT("Waktu", 2)]];
     arr.forEach(function (r, i) { rows.push([XN(i + 1, 5), XT(r.n || "", 3), XT(r.c || "", 3), XT(r.t ? new Date(r.t).toLocaleString("id-ID") : "", 5)]); });
     try {
       var blob = xlsxBlob([{ name: "Testimoni HKA", rows: rows, opt: { cols: [5, 24, 62, 18], freeze: { y: 4 }, merges: ["A1:D1", "A2:D2"] } }]);
@@ -1648,7 +1652,8 @@
       '<h3 class="sec">🧩 Atur Puzzle Reveal</h3>' +
       '<p class="muted" style="margin:2px 0 14px">' + esc(ev.eventName) + '</p>' +
       '<div class="card">' +
-        '<label class="fld">Gambar AWAL (HKA-1) — nama file / URL</label><input type="text" id="pzI1" maxlength="200" value="' + esc(ev.pzImg1 || "hka1.png") + '" placeholder="hka1.png" />' +
+        '<label class="fld">Pertanyaan untuk peserta (muncul saat scan QR)</label><input type="text" id="pzQ" maxlength="80" value="' + esc(pzPrompt(ev)) + '" placeholder="mis. 1 Kata Untuk Astra" />' +
+        '<label class="fld" style="margin-top:12px">Gambar AWAL (HKA-1) — nama file / URL</label><input type="text" id="pzI1" maxlength="200" value="' + esc(ev.pzImg1 || "hka1.png") + '" placeholder="hka1.png" />' +
         '<label class="fld" style="margin-top:12px">Gambar REVEAL (HKA-2, berisi lokasi) — nama file / URL</label><input type="text" id="pzI2" maxlength="200" value="' + esc(ev.pzImg2 || "hka2.png") + '" placeholder="hka2.png" />' +
         '<div class="hintline" style="margin-top:6px">Taruh kedua gambar di folder web (rasio SAMA, mis. 1600×900) lalu tulis nama filenya, atau tempel URL penuh.</div>' +
         '<label class="fld" style="margin-top:14px">Jumlah keping — pilih cepat atau isi manual</label>' +
@@ -1683,7 +1688,7 @@
     pzUpdTot();
   }
   function savePuzzle() {
-    var u = { pzCols: puzzleB.cols, pzRows: puzzleB.rows, pzImg1: (($("pzI1").value || "").trim() || "hka1.png"), pzImg2: (($("pzI2").value || "").trim() || "hka2.png") };
+    var u = { pzPrompt: (($("pzQ").value || "").trim() || "Tulis pesan Anda"), pzCols: puzzleB.cols, pzRows: puzzleB.rows, pzImg1: (($("pzI1").value || "").trim() || "hka1.png"), pzImg2: (($("pzI2").value || "").trim() || "hka2.png") };
     db.collection("events").doc(puzzleB.code).update(u).then(function () { toast("Tersimpan ✓"); }).catch(function () { toast("Gagal simpan"); });
   }
 
