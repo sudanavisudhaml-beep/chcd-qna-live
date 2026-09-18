@@ -1542,17 +1542,25 @@
   }
   // Pertanyaan untuk peserta disimpan per event (pzPrompt), bukan ditulis mati di kode
   function pzPrompt(ev) { ev = ev || sess.event || {}; return String(ev.pzPrompt || "Tulis pesan Anda").trim(); }
+  // Teks pembuka form (pzIntro) diatur per event; paragraf dipisah baris kosong
+  function pzIntroHTML(ev) {
+    var t = String(ev.pzIntro || "").trim(); if (!t) return "";
+    return '<div class="pz-intro">' + t.split(/\n\s*\n/).map(function (p) { return '<p>' + esc(p.trim()) + '</p>'; }).join("") + '</div>';
+  }
   function renderPuzzleForm() {
     var ev = sess.event, savedName = ""; try { savedName = localStorage.getItem("query_name") || ""; } catch (e) {}
     var clr = 'oninput="this.style.borderColor=\'\';var e=document.getElementById(\'pzErr\');if(e)e.style.display=\'none\'"';
+    var intro = pzIntroHTML(ev);
+    // Ada teks pembuka → pertanyaan jadi label kolom. Tanpa teks pembuka → pertanyaan tampil besar seperti sebelumnya.
+    var head = intro || ('<div class="pz-q">' + esc(pzPrompt(ev)) + '</div>' +
+      '<div class="pz-lead muted center" style="font-weight:600;font-size:.9rem">Setiap jawaban membuka 1 keping puzzle. Bersama-sama kita ungkap lokasinya!</div>');
     view().innerHTML = '<div class="wrap">' + heroHTML(ev, "Buka Keping") +
       '<div class="card" style="margin-bottom:14px">' +
-        '<div class="pz-q">' + esc(pzPrompt(ev)) + '</div>' +
-        '<div class="pz-lead muted center" style="font-weight:600;font-size:.9rem">Setiap jawaban membuka 1 keping puzzle. Bersama-sama kita ungkap lokasinya!</div>' +
-        '<label class="fld" style="margin-top:14px">Jawaban Anda <span style="color:#e0245e">*</span></label>' +
+        head +
+        '<label class="fld" style="margin-top:14px">' + (intro ? esc(pzPrompt(ev)) : 'Jawaban Anda') + ' <span style="color:#e0245e">*</span></label>' +
         '<input type="text" id="pzComment" maxlength="60" autocomplete="off" placeholder="mis. Juara · Keluarga · Inspiratif" ' + clr + ' />' +
-        '<label class="fld" style="margin-top:12px">Nama Anda <span style="color:#e0245e">*</span></label>' +
-        '<input type="text" id="pzName" maxlength="40" autocomplete="off" placeholder="mis. Budi / Keluarga Santoso" value="' + esc(savedName) + '" ' + clr + ' />' +
+        '<label class="fld" style="margin-top:12px">Nama Lengkap <span style="color:#e0245e">*</span></label>' +
+        '<input type="text" id="pzName" maxlength="60" autocomplete="name" placeholder="mis. Budi Santoso" value="' + esc(savedName) + '" ' + clr + ' />' +
         '<div id="pzErr" style="display:none;color:#e0245e;font-size:.82rem;font-weight:700;margin-top:8px"></div>' +
       '</div>' +
       '<button class="btn block" style="font-size:1.05rem;padding:15px" onclick="QUERY.submitPuzzle()">🧩 Kirim &amp; Buka Keping</button>' +
@@ -1564,7 +1572,7 @@
     var name = ((ni && ni.value) || "").trim(), comment = ((ci && ci.value) || "").trim();
     function fail(el, msg) { if (el) { el.style.borderColor = "#e0245e"; el.focus(); } if (er) { er.textContent = msg; er.style.display = "block"; } }
     if (!comment) { fail(ci, "Isi jawaban Anda dulu ✍️"); return; }
-    if (!name) { fail(ni, "Isi nama Anda dulu ✍️"); return; }
+    if (!name) { fail(ni, "Isi nama lengkap Anda dulu ✍️"); return; }
     if (getMyFlip()) { toast("HP ini sudah membuka keping 🙌"); renderPuzzleSession(); return; }
     sess._flipping = true; ensureAudio();
     var dev = getDeviceId(), round = (sess.event && sess.event.flipRound) || "";
@@ -1665,13 +1673,15 @@
   }
   function renderPuzzleBuilder(ev) {
     puzzleB = { code: ev.code, cols: ev.pzCols || 6, rows: ev.pzRows || 4 };
-    var grids = [[6, 4], [10, 8], [16, 12], [25, 16]];
+    var grids = [[6, 4], [10, 8], [16, 12], [25, 12], [25, 16]];
     view().innerHTML = '<div class="page">' +
       '<button class="back-link" onclick="QUERY.go(\'/dashboard\')">← Dashboard</button>' +
       '<h3 class="sec">🧩 Atur Puzzle Reveal</h3>' +
       '<p class="muted" style="margin:2px 0 14px">' + esc(ev.eventName) + '</p>' +
       '<div class="card">' +
         '<label class="fld">Pertanyaan untuk peserta (muncul saat scan QR)</label><input type="text" id="pzQ" maxlength="80" value="' + esc(pzPrompt(ev)) + '" placeholder="mis. 1 Kata Untuk Astra" />' +
+        '<label class="fld" style="margin-top:12px">Teks pembuka di atas form (opsional; pisahkan paragraf dengan baris kosong)</label>' +
+        '<textarea id="pzIntro" maxlength="1200" rows="8" placeholder="mis. Halo Insan Astra! 👋">' + esc(ev.pzIntro || "") + '</textarea>' +
         '<label class="fld" style="margin-top:12px">Gambar AWAL (HKA-1) — nama file / URL</label><input type="text" id="pzI1" maxlength="200" value="' + esc(ev.pzImg1 || "hka1.png") + '" placeholder="hka1.png" />' +
         '<label class="fld" style="margin-top:12px">Gambar REVEAL (HKA-2, berisi lokasi) — nama file / URL</label><input type="text" id="pzI2" maxlength="200" value="' + esc(ev.pzImg2 || "hka2.png") + '" placeholder="hka2.png" />' +
         '<div class="hintline" style="margin-top:6px">Taruh kedua gambar di folder web (rasio SAMA, mis. 1600×900) lalu tulis nama filenya, atau tempel URL penuh.</div>' +
@@ -1707,7 +1717,7 @@
     pzUpdTot();
   }
   function savePuzzle() {
-    var u = { pzPrompt: (($("pzQ").value || "").trim() || "Tulis pesan Anda"), pzCols: puzzleB.cols, pzRows: puzzleB.rows, pzImg1: (($("pzI1").value || "").trim() || "hka1.png"), pzImg2: (($("pzI2").value || "").trim() || "hka2.png") };
+    var u = { pzPrompt: (($("pzQ").value || "").trim() || "Tulis pesan Anda"), pzIntro: ($("pzIntro").value || "").trim(), pzCols: puzzleB.cols, pzRows: puzzleB.rows, pzImg1: (($("pzI1").value || "").trim() || "hka1.png"), pzImg2: (($("pzI2").value || "").trim() || "hka2.png") };
     db.collection("events").doc(puzzleB.code).update(u).then(function () { toast("Tersimpan ✓"); }).catch(function () { toast("Gagal simpan"); });
   }
 

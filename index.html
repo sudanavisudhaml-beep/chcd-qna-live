@@ -561,6 +561,10 @@
     /* Jawaban pendek (mis. "1 kata") ditampilkan besar agar terbaca dari jauh di proyektor */
     .pz-pop.short{text-align:center;padding:14px 26px}
     .pz-pop.short .pz-pop-c{font-size:clamp(1.6rem,3.4vw,2.6rem);font-weight:900;line-height:1.1;color:var(--astra-dark)}
+    .pz-intro{font-size:.98rem;line-height:1.5;color:var(--ink)}
+    .pz-intro p{margin:0 0 .6em;white-space:pre-line}
+    .pz-intro p:first-child{font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:1.25rem;color:var(--astra-dark)}
+    .pz-intro p:last-child{margin-bottom:0;color:var(--muted);font-weight:600;font-size:.9rem}
     .pz-q{font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:1.6rem;line-height:1.2;color:var(--astra-dark);text-align:center;margin:4px 0 8px}
     .vqr-q{display:block;margin-top:3px;font-size:.78rem;color:var(--astra);letter-spacing:0}
     .pz-pop-n{font-size:.8rem;color:var(--muted);font-weight:700;margin-top:5px}
@@ -636,11 +640,11 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="config.js?v=53"></script>
+  <script src="config.js?v=54"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="qrcode.js?v=1"></script>
-  <script src="app.js?v=53"></script>
+  <script src="app.js?v=54"></script>
   <script>App.boot();</script>
 </body>
 </html>
